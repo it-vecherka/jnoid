@@ -1,0 +1,18 @@
+{
+  "name": "jnoid",
+  "version": "0.0.0",
+  "description": "DESCRIPTION WILL BE HERE",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/it-vecherka/jnoid.git"
+  },
+  "author": "Alexey Osipenko, Dmitriy Kiriyenko",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/it-vecherka/jnoid/issues"
+  }
+}
