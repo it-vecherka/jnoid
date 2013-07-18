@@ -4,7 +4,7 @@
   "description": "DESCRIPTION WILL BE HERE",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "mocha --compilers coffee:coffee-script"
   },
   "repository": {
     "type": "git",
@@ -14,5 +14,12 @@
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/it-vecherka/jnoid/issues"
+  },
+  "dependencies": {
+    "coffee-script": "*"
+  },
+  "devDependencies": {
+    "mocha": "*",
+    "chai": "*"
   }
 }
