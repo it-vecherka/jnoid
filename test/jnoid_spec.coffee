@@ -34,13 +34,13 @@ describe 'unit', ->
 describe 'sequentially', ->
   it 'sends all events', (done)->
     expectEvents [1, 2, 3],
-      Jnoid.sequentially([1, 2, 3], 10),
+      Jnoid.sequentially(10, [1, 2, 3]),
       done
 
 describe 'later', ->
   it 'sends one event', (done)->
     expectEvents [1],
-      Jnoid.later(1),
+      Jnoid.later(10, 1),
       done
 
 describe 'flatMap', ->

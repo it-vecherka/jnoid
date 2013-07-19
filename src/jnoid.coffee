@@ -9,10 +9,10 @@ Jnoid.fromList = (list)->
 Jnoid.unit = (args...)->
   Jnoid.fromList(args)
 
-Jnoid.later = (value, delay)->
-  Jnoid.sequentially([value], delay)
+Jnoid.later = (delay, value)->
+  Jnoid.sequentially(delay, [value])
 
-Jnoid.sequentially = (list, delay)->
+Jnoid.sequentially = (delay, list)->
   index = 0
   Jnoid.fromPoll delay, ->
     value = list[index++]
