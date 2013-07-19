@@ -96,6 +96,29 @@ describe 'zipWith', ->
       first.zipWith(second, (x, y) -> x + y),
       done
 
+describe 'and', ->
+  it 'executes boolean "and" between streams', (done)->
+    first = Jnoid.sequentially(10, [false, true])
+    second = Jnoid.sequentially(15, [false, true])
+    expectEvents [false, false, true],
+      first.and(second),
+      done
+
+describe 'or', ->
+  it 'executes boolean "or" between streams', (done)->
+    first = Jnoid.sequentially(10, [false, true])
+    second = Jnoid.sequentially(15, [false, true])
+    expectEvents [false, true, true],
+      first.or(second),
+      done
+
+describe 'not', ->
+  it 'executes boolean "not" on stream', (done)->
+    stream = Jnoid.sequentially(10, [false, true, false])
+    expectEvents [true, false, true],
+      stream.not(),
+      done
+
 expectEvents = (expectedEvents, stream, done)->
   events = []
   stream.onValue (event) ->

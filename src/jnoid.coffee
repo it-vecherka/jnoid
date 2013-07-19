@@ -159,6 +159,11 @@ class EventStream
     Jnoid.zip([@, other])
   zipWith: (other, f)->
     @zip(other).map(uncurry(f))
+  and: (other)->
+    @zipWith(other, (a, b)-> a && b)
+  or: (other)->
+    @zipWith(other, (a, b)-> a || b)
+  not: -> @map (x)-> !x
 
 class Dispatcher
   constructor: (unfold) ->
