@@ -51,6 +51,15 @@ describe 'map', ->
       stream.map((x)-> x * 2),
       done
 
+describe 'merge', ->
+  it 'merges lots of streams', (done)->
+    first = Jnoid.fromList([1, 2, 3])
+    second = Jnoid.fromList([10, 20, 30])
+    third = Jnoid.fromList([100, 200, 300])
+    expectEvents [1, 2, 3, 10, 20, 30, 100, 200, 300],
+      first.merge(second, third),
+      done
+
 expectEvents = (expectedEvents, stream, done)->
   events = []
   stream.onValue (event) ->

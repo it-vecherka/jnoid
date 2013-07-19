@@ -89,6 +89,8 @@ class EventStream
     @flatMap(args...)
   map: (f)->
     @flatMap (x)-> Jnoid.unit(f(x))
+  merge: (others...)->
+    Jnoid.fromList([@, others...]).map(toEvent).flatMap(id)
 
 class Dispatcher
   constructor: (unfold, handleEvent) ->
@@ -110,6 +112,7 @@ class Dispatcher
   toString: -> "Dispatcher"
 
 nop = ->
+id = (x)-> x
 tap = (x, f) ->
   f(x)
   x
