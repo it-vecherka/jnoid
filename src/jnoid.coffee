@@ -178,6 +178,13 @@ class EventStream
         @push event
       else
         Jnoid.more
+  takeWhile: (f) ->
+    @withHandler (event) ->
+      if event.filter(f)
+        @push event
+      else
+        @push Jnoid.end()
+        Jnoid.noMore
 
 class Dispatcher
   constructor: (unfold, handleEvent) ->

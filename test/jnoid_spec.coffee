@@ -114,16 +114,23 @@ describe 'or', ->
 
 describe 'not', ->
   it 'executes boolean "not" on stream', (done)->
-    stream = Jnoid.sequentially(10, [false, true, false])
+    stream = Jnoid.fromList([false, true, false])
     expectEvents [true, false, true],
       stream.not(),
       done
 
 describe 'filter', ->
   it 'filters stream', (done)->
-    stream = Jnoid.sequentially(10, [10, 100, 20])
+    stream = Jnoid.fromList([10, 100, 20])
     expectEvents [10, 20],
       stream.filter((x)-> x < 50),
+      done
+
+describe 'takeWhile', ->
+  it 'takes while', (done)->
+    stream = Jnoid.fromList([10, 100, 20])
+    expectEvents [10],
+      stream.takeWhile((x)-> x < 50),
       done
 
 expectEvents = (expectedEvents, stream, done)->
