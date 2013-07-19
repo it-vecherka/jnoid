@@ -31,7 +31,20 @@ describe 'unit', ->
       Jnoid.unit(),
       done
 
-expectEvents = (expectedEvents, stream, done) ->
+describe 'flatMap', ->
+  it 'combines spawned streams (trivial case)', (done)->
+    stream = Jnoid.fromList([1, 2, 3])
+    expectEvents [1, 2, 3],
+      stream.flatMap((x)-> Jnoid.unit(x)),
+      done
+
+  it 'can be aliased as bind', (done)->
+    stream = Jnoid.fromList([1, 2, 3])
+    expectEvents [1, 2, 3],
+      stream.bind((x)-> Jnoid.unit(x)),
+      done
+
+expectEvents = (expectedEvents, stream, done)->
   events = []
   stream.onValue (event) ->
     if event.isEnd()

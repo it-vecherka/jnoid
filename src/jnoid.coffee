@@ -15,8 +15,8 @@ sendWrapped = (values, wrapper) ->
 
 # Dummy objects for asserting.
 # Should not be equal.
-Jnoid.more = {}
-Jnoid.noMore = {}
+Jnoid.more = "more"
+Jnoid.noMore = "no more"
 
 Jnoid.initial = (value) -> new Initial(value)
 Jnoid.next = (value) -> new Next(value)
@@ -30,6 +30,7 @@ class Event
 class Next extends Event
   constructor: (@value) ->
   isNext: -> true
+  describe: -> "Event.Next <#{@value}>"
 
 class Initial extends Next
   isInitial: -> true
@@ -37,11 +38,52 @@ class Initial extends Next
 class End extends Event
   constructor: ->
   isEnd: -> true
+  describe: -> "Event.End"
 
 class EventStream
   constructor: (unfold) ->
     @unfold = new Dispatcher(unfold).unfold
     @onValue = @unfold
+  flatMap: (f, firstOnly) ->
+    root = this
+    new EventStream (sink) ->
+      children = []
+      rootEnd = false
+      unsubRoot = ->
+      unbind = ->
+        unsubRoot()
+        unsubChild() for unsubChild in children
+        children = []
+      checkEnd = ->
+        if rootEnd and (children.length == 0)
+          sink Jnoid.end()
+      spawner = (event) ->
+        if event.isEnd()
+          rootEnd = true
+          checkEnd()
+        else if firstOnly and children.length
+          Jnoid.more
+        else
+          child = f event.value
+          unsubChild = undefined
+          childEnded = false
+          removeChild = ->
+            remove(unsubChild, children) if unsubChild?
+            checkEnd()
+          handler = (event) ->
+            if event.isEnd()
+              removeChild()
+              childEnded = true
+              Jnoid.noMore
+            else
+              tap sink(event), (reply)->
+                unbind() if reply == Jnoid.noMore
+          unsubChild = child.onValue handler
+          children.push unsubChild if not childEnded
+      unsubRoot = root.onValue(spawner)
+      unbind
+  bind: (args...)->
+    @flatMap(args...)
 
 class Dispatcher
   constructor: (unfold, handleEvent) ->
@@ -49,8 +91,8 @@ class Dispatcher
     sinks = []
     @push = (event) =>
       for sink in sinks
-        reply = sink event
-        remove(sink, sinks) if reply == Jnoid.noMore
+        tap sink(event), (reply)->
+          remove(sink, sinks) if reply == Jnoid.noMore
       if (sinks.length > 0) then Jnoid.more else Jnoid.noMore
     handleEvent ?= (event) -> @push event
     @handleEvent = (event) =>
@@ -63,7 +105,13 @@ class Dispatcher
   toString: -> "Dispatcher"
 
 nop = ->
+tap = (x, f) ->
+  f(x)
+  x
 empty = (xs) -> xs.length == 0
 head = (xs) -> xs[0]
 tail = (xs) -> xs[1...xs.length]
+remove = (x, xs) ->
+  i = xs.indexOf(x)
+  xs.splice(i, 1) if i >= 0
 toEvent = (x) -> if x instanceof Event then x else Jnoid.next x
