@@ -44,6 +44,42 @@ sendWrapped = (values, wrapper) ->
 Jnoid.join = (streamOfStreams)-> streamOfStreams.flatMap(id)
 Jnoid.flatten = Jnoid.join
 
+Jnoid.zip = (streams) ->
+  if streams.length
+    values = (undefined for s in streams)
+    new EventStream (sink) =>
+      unsubscribed = false
+      unsubs = (nop for s in streams)
+      unsubAll = (-> f() for f in unsubs ; unsubscribed = true)
+      ends = (false for s in streams)
+      checkEnd = ->
+        if all(ends)
+          tap sink(Jnoid.end()), (reply)->
+            unsubAll() if reply == Jnoid.noMore
+      combiningSink = (markEnd, setValue) ->
+        (event) ->
+          if (event.isEnd())
+            markEnd()
+            checkEnd()
+            Jnoid.noMore
+          else
+            setValue(event.value)
+            if all(values, (x) -> x != undefined)
+              tap sink(toEvent (v for v in values)), (reply)->
+                unsubAll() if reply == Jnoid.noMore
+            else
+              Jnoid.more
+      sinkFor = (index) ->
+        combiningSink(
+          (-> ends[index] = true)
+          ((x) -> values[index] = x)
+        )
+      for stream, index in streams
+        unsubs[index] = stream.onValue (sinkFor index) unless unsubscribed
+      unsubAll
+  else
+    Jnoid.unit([])
+
 # Dummy objects for asserting.
 # Should not be equal.
 Jnoid.more = "<more>"
@@ -119,6 +155,8 @@ class EventStream
     Jnoid.join Jnoid.fromList([@, others...])
   delay: (delay)->
     @flatMap (x)-> Jnoid.later(delay, x)
+  zip: (others...)->
+    Jnoid.zip([@, others...])
 
 class Dispatcher
   constructor: (unfold) ->
@@ -143,6 +181,12 @@ tap = (x, f) ->
 empty = (xs) -> xs.length == 0
 head = (xs) -> xs[0]
 tail = (xs) -> xs[1...xs.length]
+map = (f, xs) ->
+    f(x) for x in xs
+all = (xs, f = id) ->
+  for x in xs
+    return false if not f(x)
+  return true
 remove = (x, xs) ->
   i = xs.indexOf(x)
   xs.splice(i, 1) if i >= 0
