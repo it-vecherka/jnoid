@@ -23,6 +23,8 @@ Jnoid.initial = (value) -> new Initial(value)
 Jnoid.next = (value) -> new Next(value)
 Jnoid.end = -> new End()
 
+Jnoid.join = (streamOfStreams)-> streamOfStreams.map(toEvent).flatMap(id)
+
 class Event
   isEnd: -> false
   isInitial: -> false
@@ -90,7 +92,7 @@ class EventStream
   map: (f)->
     @flatMap (x)-> Jnoid.unit(f(x))
   merge: (others...)->
-    Jnoid.fromList([@, others...]).map(toEvent).flatMap(id)
+    Jnoid.join Jnoid.fromList([@, others...])
 
 class Dispatcher
   constructor: (unfold, handleEvent) ->
