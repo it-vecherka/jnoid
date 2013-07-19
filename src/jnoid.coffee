@@ -164,6 +164,9 @@ class EventStream
   or: (other)->
     @zipWith(other, (a, b)-> a || b)
   not: -> @map (x)-> !x
+  log: (args...) ->
+    @onValue (event) -> console?.log?(args..., event.describe())
+    this
 
 class Dispatcher
   constructor: (unfold) ->
