@@ -46,7 +46,7 @@ describe 'flatMap', ->
 
 describe 'map', ->
   it 'transforms values', (done)->
-    stream= Jnoid.fromList([1, 2, 3])
+    stream = Jnoid.fromList([1, 2, 3])
     expectEvents [2, 4, 6],
       stream.map((x)-> x * 2),
       done
@@ -55,7 +55,7 @@ expectEvents = (expectedEvents, stream, done)->
   events = []
   stream.onValue (event) ->
     if event.isEnd()
-      assert.deepEqual(expectedEvents, events)
+      assert.deepEqual(events, expectedEvents)
       done()
     else
       events.push(event.value)
