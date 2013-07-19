@@ -3,18 +3,13 @@ module?.exports = Jnoid = {}
 Jnoid.fromDOM = ($, e)->
 
 Jnoid.fromList = (list)->
-  new EventStream( (sink)->
-    schedule = (xs) ->
-      if empty xs
-        sink Jnoid.end()
-      else
-        push xs
-    push = (xs) ->
-      reply = sink Jnoid.next head xs
-      unless reply == Jnoid.noMore
-        schedule tail xs
-    schedule list
-  )
+  new EventStream(sendWrapped(list, toEvent))
+
+sendWrapped = (values, wrapper) ->
+  (sink) ->
+    sink (wrapper value) for value in values
+    sink (Jnoid.end())
+    nop
 
 # Dummy objects for asserting.
 # Should not be equal.
@@ -26,7 +21,6 @@ Jnoid.next = (value) -> new Next(value)
 Jnoid.end = -> new End()
 
 class Event
-  isEvent: -> true
   isEnd: -> false
   isInitial: -> false
   isNext: -> false
@@ -66,7 +60,8 @@ class Dispatcher
   toEventStream: -> new EventStream(@subscribe)
   toString: -> "Dispatcher"
 
+nop = ->
 empty = (xs) -> xs.length == 0
 head = (xs) -> xs[0]
 tail = (xs) -> xs[1...xs.length]
-
+toEvent = (x) -> if x instanceof Event then x else Jnoid.next x
