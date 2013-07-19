@@ -72,6 +72,14 @@ describe 'merge', ->
       first.merge(second, third),
       done
 
+describe 'delay', ->
+  it 'sends all events after a delay', (done)->
+    first = Jnoid.fromList([1, 2, 3]).delay(10)
+    second = Jnoid.fromList([10, 20, 30])
+    expectEvents [10, 20, 30, 1, 2, 3],
+      first.merge(second),
+      done
+
 expectEvents = (expectedEvents, stream, done)->
   events = []
   stream.onValue (event) ->

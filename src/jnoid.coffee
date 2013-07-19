@@ -121,6 +121,8 @@ class EventStream
     @flatMap (x)-> Jnoid.unit(f(x))
   merge: (others...)->
     Jnoid.join Jnoid.fromList([@, others...])
+  delay: (delay)->
+    @flatMap (x)-> Jnoid.later(delay, x)
 
 class Dispatcher
   constructor: (unfold) ->
