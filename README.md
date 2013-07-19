@@ -20,3 +20,4 @@ Howto develop
 * *Set up*. Clone the repo and run `npm install`.
 * *Run tests*. Execute `npm test`.
 * *Run example*. Execute `npm run-script simple-example`.
+It will run on `localhost` at port `3000`.
