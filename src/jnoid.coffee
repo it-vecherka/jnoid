@@ -4,6 +4,8 @@ Jnoid.fromDOM = ($, e)->
 
 Jnoid.fromList = (list)->
   new EventStream(sendWrapped(list, toEvent))
+Jnoid.unit = (args...)->
+  Jnoid.fromList(args)
 
 sendWrapped = (values, wrapper) ->
   (sink) ->
