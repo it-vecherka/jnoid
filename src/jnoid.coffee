@@ -1,4 +1,4 @@
-module?.exports = Jnoid = {}
+Jnoid = {}
 
 Jnoid.fromDOM = ($, e)->
 
@@ -265,3 +265,12 @@ remove = (x, xs) ->
   xs.splice(i, 1) if i >= 0
 toArray = (x) -> if x instanceof Array then x else [x]
 toEvent = (x) -> if x instanceof Event then x else Jnoid.next x
+
+
+# we support AMD, nodejs, browsers
+if define?.amd
+  define [], -> Jnoid
+else if module?.exports
+  module.exports = Jnoid
+else
+  @Jnoid = Jnoid
