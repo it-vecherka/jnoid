@@ -31,6 +31,12 @@ describe 'unit', ->
       Jnoid.unit(),
       done
 
+describe 'sequentially', ->
+  it 'sends all events', (done)->
+    expectEvents [1, 2, 3],
+      Jnoid.sequentially([1, 2, 3], 10),
+      done
+
 describe 'flatMap', ->
   it 'combines spawned streams (trivial case)', (done)->
     stream = Jnoid.fromList([1, 2, 3])

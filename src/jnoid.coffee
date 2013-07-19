@@ -9,6 +9,28 @@ Jnoid.fromList = (list)->
 Jnoid.unit = (args...)->
   Jnoid.fromList(args)
 
+Jnoid.sequentially = (list, delay)->
+  index = 0
+  Jnoid.fromPoll delay, ->
+    value = list[index++]
+    if index <= list.length
+      value
+    else
+      Jnoid.end()
+
+Jnoid.fromPoll = (delay, poll) ->
+  Jnoid.fromBinder (handler) ->
+    id = setInterval(handler, delay)
+    -> clearInterval(id)
+  , poll
+
+Jnoid.fromBinder = (binder, transform = id) ->
+  new EventStream (sink) ->
+    unbinder = binder (args...) ->
+      event = toEvent transform args...
+      tap sink(event), (reply)->
+        unbinder() if reply == Jnoid.noMore or event.isEnd()
+
 sendWrapped = (values, wrapper) ->
   (sink) ->
     sink (wrapper value) for value in values
