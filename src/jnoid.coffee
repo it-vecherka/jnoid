@@ -14,7 +14,7 @@ Jnoid.later = (delay, value)->
 
 Jnoid.sequentially = (delay, list)->
   index = 0
-  Jnoid.fromPoll delay, ->
+  Jnoid.fromPoll delay,->
     value = list[index++]
     if index < list.length
       value
@@ -226,15 +226,20 @@ class Dispatcher
     sinks = []
     @push = (event) =>
       for sink in sinks
-        tap sink(event), (reply)->
-          remove(sink, sinks) if reply == Jnoid.noMore
+        tap sink(event), (reply) =>
+          @unsub(sink)() if reply == Jnoid.noMore
       if (sinks.length > 0) then Jnoid.more else Jnoid.noMore
     handleEvent ?= (event) -> @push event
     @handleEvent = (event) => handleEvent.apply(this, [event])
+    @unsubSelf = -> @unfold @handleEvent
+    @unsub = (sink)-> ->
+      remove(sink, sinks)
+      @unsubSelf unless any(sinks)
     @unfold = (sink) =>
       sinks.push(sink)
       if sinks.length == 1
         unfold @handleEvent
+      @unsub(sink)
   toString: -> "Dispatcher"
 
 nop = ->

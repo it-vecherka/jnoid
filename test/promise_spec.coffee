@@ -25,3 +25,11 @@ describe "Jnoid.fromPromise", ->
       Jnoid.fromPromise(promise),
       done
     fail("E")
+
+  it "unsubscribes", (done)->
+    events = []
+    unsub = Jnoid.fromPromise(promise).onValue((e) => events.push(e))
+    unsub()
+    success("A")
+    assert.deepEqual(events, [])
+    done()
