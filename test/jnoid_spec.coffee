@@ -88,6 +88,14 @@ describe 'zip', ->
       first.zip(second),
       done
 
+describe 'zipWith', ->
+  it 'zips with function', (done)->
+    first = Jnoid.sequentially(10, [1, 2])
+    second = Jnoid.sequentially(15, [100, 200])
+    expectEvents [101, 102, 202],
+      first.zipWith(second, (x, y) -> x + y),
+      done
+
 expectEvents = (expectedEvents, stream, done)->
   events = []
   stream.onValue (event) ->

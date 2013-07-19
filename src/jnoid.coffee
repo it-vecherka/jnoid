@@ -155,8 +155,10 @@ class EventStream
     Jnoid.join Jnoid.fromList([@, others...])
   delay: (delay)->
     @flatMap (x)-> Jnoid.later(delay, x)
-  zip: (others...)->
-    Jnoid.zip([@, others...])
+  zip: (other)->
+    Jnoid.zip([@, other])
+  zipWith: (other, f)->
+    @zip(other).map(uncurry(f))
 
 class Dispatcher
   constructor: (unfold) ->
@@ -181,6 +183,7 @@ tap = (x, f) ->
 empty = (xs) -> xs.length == 0
 head = (xs) -> xs[0]
 tail = (xs) -> xs[1...xs.length]
+uncurry = (f) -> (args)-> f(args...)
 map = (f, xs) ->
     f(x) for x in xs
 all = (xs, f = id) ->
