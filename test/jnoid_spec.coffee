@@ -68,4 +68,3 @@ expectEvents = (expectedEvents, stream, done)->
       done()
     else
       events.push(event.value)
-

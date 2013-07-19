@@ -2,6 +2,7 @@ module?.exports = Jnoid = {}
 
 Jnoid.fromDOM = ($, e)->
 
+# Generators
 Jnoid.fromList = (list)->
   new EventStream(sendWrapped(list, toEvent))
 
@@ -14,6 +15,10 @@ sendWrapped = (values, wrapper) ->
     sink (Jnoid.end())
     nop
 
+# Processors
+Jnoid.join = (streamOfStreams)-> streamOfStreams.flatMap(id)
+Jnoid.flatten = Jnoid.join
+
 # Dummy objects for asserting.
 # Should not be equal.
 Jnoid.more = "<more>"
@@ -22,9 +27,6 @@ Jnoid.noMore = "<no more>"
 Jnoid.initial = (value) -> new Initial(value)
 Jnoid.next = (value) -> new Next(value)
 Jnoid.end = -> new End()
-
-Jnoid.join = (streamOfStreams)-> streamOfStreams.flatMap(id)
-Jnoid.flatten = Jnoid.join
 
 class Event
   isEnd: -> false
@@ -96,7 +98,7 @@ class EventStream
     Jnoid.join Jnoid.fromList([@, others...])
 
 class Dispatcher
-  constructor: (unfold, handleEvent) ->
+  constructor: (unfold) ->
     unfold ?= (event) ->
     sinks = []
     @push = (event) =>
@@ -104,14 +106,10 @@ class Dispatcher
         tap sink(event), (reply)->
           remove(sink, sinks) if reply == Jnoid.noMore
       if (sinks.length > 0) then Jnoid.more else Jnoid.noMore
-    handleEvent ?= (event) -> @push event
-    @handleEvent = (event) =>
-      handleEvent.apply(this, [event])
     @unfold = (sink) =>
       sinks.push(sink)
       if sinks.length == 1
-        unfold @handleEvent
-  toEventStream: -> new EventStream(@subscribe)
+        unfold @push
   toString: -> "Dispatcher"
 
 nop = ->
