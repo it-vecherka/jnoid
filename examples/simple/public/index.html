@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Jnoid simple example</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="css/bootstrap.min.css" rel="stylesheet" media="screen">
+  <link href="css/bootstrap-responsive.min.css" rel="stylesheet" media="screen">
+  <style type="text/css">
+    @media(min-width:980px) {
+      body {
+        padding-top: 60px; /* 60px to make the container go all the way to the bottom of the topbar */
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="navbar navbar-inverse navbar-fixed-top">
+    <div class="navbar-inner">
+      <div class="container">
+        <a class="brand" href="#">Jnoid</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="container">
+    <form class="form-horizontal" action="/register" method='get'>
+      <div class="control-group">
+        <label class="control-label" for="inputLogin">Login</label>
+        <div class="controls">
+          <input type="text" id="inputLogin" placeholder="Login" name="login">
+          <span class="help-block">Your login should not be 'Peter', 'Jack', 'Jackson' and 'Samuel'.</span>
+        </div>
+      </div>
+      <div class="control-group">
+        <label class="control-label" for="inputPassword">Fullname</label>
+        <div class="controls">
+          <input type="text" id="inputFullname" placeholder="Fullname" name="fullname">
+          <span class="help-block">Use any fullname with lenght &lt; 30 symbols.</span>
+        </div>
+      </div>
+      <div class="control-group">
+        <div class="controls">
+          <button type="submit" class="btn" disabled="disabled">Sign in</button>
+        </div>
+      </div>
+    </form>
+  </div>
+
+</body>
+</html>
