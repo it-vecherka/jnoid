@@ -23,7 +23,7 @@ Jnoid.initial = (value) -> new Initial(value)
 Jnoid.next = (value) -> new Next(value)
 Jnoid.end = -> new End()
 
-Jnoid.join = (streamOfStreams)-> streamOfStreams.map(toEvent).flatMap(id)
+Jnoid.join = (streamOfStreams)-> streamOfStreams.flatMap(id)
 
 class Event
   isEnd: -> false
