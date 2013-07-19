@@ -1,4 +1,3 @@
-require 'coffee-script'
 assert = require('chai').assert
 Jnoid = require '../src/jnoid'
 
