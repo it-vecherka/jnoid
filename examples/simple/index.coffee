@@ -7,9 +7,9 @@ app.use express.static "#{__dirname}/public"
 
 app.get '/check-login/:login', (req, res)->
   if _.contains ['Peter', 'Jack', 'Jackson', 'Samuel'], req.params.login
-    res.send 406, "Peter, Jack, Jackson and Samuel is busy"
+    res.send 406, "Peter, Jack, Jackson and Samuel is taken"
   else
-    res.send 200, "The name '#{req.params.login}' is availavbe for new login"
+    res.send 200, "The name '#{req.params.login}' is available for new login"
 
 app.get '/register', (req, res)->
   if req.query['login'] && req.query['fullname'] && req.query['fullname'].length < 30
