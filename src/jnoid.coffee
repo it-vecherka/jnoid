@@ -87,6 +87,8 @@ class EventStream
       unbind
   bind: (args...)->
     @flatMap(args...)
+  map: (f)->
+    @flatMap (x)-> Jnoid.unit(f(x))
 
 class Dispatcher
   constructor: (unfold, handleEvent) ->

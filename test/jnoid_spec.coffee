@@ -44,6 +44,13 @@ describe 'flatMap', ->
       stream.bind((x)-> Jnoid.unit(x)),
       done
 
+describe 'map', ->
+  it 'transforms values', (done)->
+    stream= Jnoid.fromList([1, 2, 3])
+    expectEvents [2, 4, 6],
+      stream.map((x)-> x * 2),
+      done
+
 expectEvents = (expectedEvents, stream, done)->
   events = []
   stream.onValue (event) ->
