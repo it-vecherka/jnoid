@@ -227,19 +227,16 @@ class Dispatcher
     @push = (event) =>
       for sink in sinks
         tap sink(event), (reply) =>
-          @unsub(sink)() if reply == Jnoid.noMore
+          remove(sink, sinks) if reply == Jnoid.noMore
       if (sinks.length > 0) then Jnoid.more else Jnoid.noMore
     handleEvent ?= (event) -> @push event
     @handleEvent = (event) => handleEvent.apply(this, [event])
-    @unsubSelf = -> @unfold @handleEvent
-    @unsub = (sink)-> ->
-      remove(sink, sinks)
-      @unsubSelf unless any(sinks)
     @unfold = (sink) =>
       sinks.push(sink)
-      if sinks.length == 1
-        unfold @handleEvent
-      @unsub(sink)
+      unsubSelf = unfold @handleEvent
+      ->
+        remove(sink, sinks)
+        unsubSelf() unless any sinks
   toString: -> "Dispatcher"
 
 nop = ->

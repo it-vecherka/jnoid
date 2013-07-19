@@ -26,10 +26,18 @@ describe "Jnoid.fromPromise", ->
       done
     fail("E")
 
-  it "unsubscribes", (done)->
+  it "unsubscribes", ->
     events = []
     unsub = Jnoid.fromPromise(promise).onValue((e) => events.push(e))
     unsub()
     success("A")
     assert.deepEqual(events, [])
-    done()
+
+  it "aborts on unsubscribe", ->
+    isAborted = false
+    promise.abort = ->
+      isAborted = true
+    unsub = Jnoid.fromPromise(promise).onValue(nop)
+    unsub()
+    delete promise.abort
+    assert.equal(isAborted, true)
