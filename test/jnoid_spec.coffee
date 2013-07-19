@@ -119,6 +119,13 @@ describe 'not', ->
       stream.not(),
       done
 
+describe 'filter', ->
+  it 'filters stream', (done)->
+    stream = Jnoid.sequentially(10, [10, 100, 20])
+    expectEvents [10, 20],
+      stream.filter((x)-> x < 50),
+      done
+
 expectEvents = (expectedEvents, stream, done)->
   events = []
   stream.onValue (event) ->

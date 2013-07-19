@@ -92,12 +92,14 @@ Jnoid.end = -> new End()
 class Event
   isEnd: -> false
   isNext: -> false
+  filter: -> true
 
 class Next extends Event
   constructor: (@value) ->
   isNext: -> true
   describe: -> @value
   inspect: -> "Event.Next<#{@value}>"
+  filter: (f)-> f(@value)
 
 class End extends Event
   constructor: ->
@@ -167,9 +169,18 @@ class EventStream
   log: (args...) ->
     @onValue (event) -> console?.log?(args..., event.describe())
     this
+  withHandler: (handler) ->
+    dispatcher = new Dispatcher(@unfold, handler)
+    new EventStream(dispatcher.unfold)
+  filter: (f) ->
+    @withHandler (event) ->
+      if event.filter(f)
+        @push event
+      else
+        Jnoid.more
 
 class Dispatcher
-  constructor: (unfold) ->
+  constructor: (unfold, handleEvent) ->
     unfold ?= (event) ->
     sinks = []
     @push = (event) =>
@@ -177,10 +188,12 @@ class Dispatcher
         tap sink(event), (reply)->
           remove(sink, sinks) if reply == Jnoid.noMore
       if (sinks.length > 0) then Jnoid.more else Jnoid.noMore
+    handleEvent ?= (event) -> @push event
+    @handleEvent = (event) => handleEvent.apply(this, [event])
     @unfold = (sink) =>
       sinks.push(sink)
       if sinks.length == 1
-        unfold @push
+        unfold @handleEvent
   toString: -> "Dispatcher"
 
 nop = ->
