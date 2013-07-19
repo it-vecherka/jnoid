@@ -133,6 +133,29 @@ describe 'takeWhile', ->
       stream.takeWhile((x)-> x < 50),
       done
 
+describe 'onlyEnd', ->
+  it 'only passes end', (done)->
+    stream = Jnoid.fromList([10, 100, 20])
+    expectEvents [],
+      stream.onlyEnd(),
+      done
+
+
+describe 'prepend', ->
+  it 'prepends a value to a stream', (done)->
+    stream = Jnoid.fromList([10, 20, 30])
+    expectEvents [1, 10, 20, 30],
+      stream.prepend(1),
+      done
+
+describe 'takeUntil', ->
+  it 'takes until other stream ends', (done)->
+    stream = Jnoid.sequentially(10, [10, 20, 30, 40, 50])
+    stopper = Jnoid.sequentially(35, [100])
+    expectEvents [10, 20, 30],
+      stream.takeUntil(stopper),
+      done
+
 expectEvents = (expectedEvents, stream, done)->
   events = []
   stream.onValue (event) ->

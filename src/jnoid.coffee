@@ -16,8 +16,10 @@ Jnoid.sequentially = (delay, list)->
   index = 0
   Jnoid.fromPoll delay, ->
     value = list[index++]
-    if index <= list.length
+    if index < list.length
       value
+    else if index == list.length
+      [value, Jnoid.end()]
     else
       Jnoid.end()
 
@@ -30,9 +32,11 @@ Jnoid.fromPoll = (delay, poll) ->
 Jnoid.fromBinder = (binder, transform = id) ->
   new EventStream (sink) ->
     unbinder = binder (args...) ->
-      event = toEvent transform args...
-      tap sink(event), (reply)->
-        unbinder() if reply == Jnoid.noMore or event.isEnd()
+      events = toArray transform args...
+      for e in events
+        event = toEvent e
+        tap sink(event), (reply)->
+          unbinder() if reply == Jnoid.noMore or event.isEnd()
 
 sendWrapped = (values, wrapper) ->
   (sink) ->
@@ -44,7 +48,7 @@ sendWrapped = (values, wrapper) ->
 Jnoid.join = (streamOfStreams)-> streamOfStreams.flatMap(id)
 Jnoid.flatten = Jnoid.join
 
-Jnoid.zip = (streams) ->
+Jnoid.zip = (streams, endChecker = all) ->
   if streams.length
     values = (undefined for s in streams)
     new EventStream (sink) =>
@@ -53,7 +57,7 @@ Jnoid.zip = (streams) ->
       unsubAll = (-> f() for f in unsubs ; unsubscribed = true)
       ends = (false for s in streams)
       checkEnd = ->
-        if all(ends)
+        if endChecker(ends)
           tap sink(Jnoid.end()), (reply)->
             unsubAll() if reply == Jnoid.noMore
       combiningSink = (markEnd, setValue) ->
@@ -79,6 +83,9 @@ Jnoid.zip = (streams) ->
       unsubAll
   else
     Jnoid.unit([])
+
+Jnoid.zipAndStop = (streams)->
+  Jnoid.zip(streams, any)
 
 # Dummy objects for asserting.
 # Should not be equal.
@@ -159,8 +166,12 @@ class EventStream
     @flatMap (x)-> Jnoid.later(delay, x)
   zip: (other)->
     Jnoid.zip([@, other])
+  zipAndStop: (other)->
+    Jnoid.zipAndStop([@, other])
   zipWith: (other, f)->
     @zip(other).map(uncurry(f))
+  zipWithAndStop: (other, f)->
+    @zipAndStop(other).map(uncurry(f))
   and: (other)->
     @zipWith(other, (a, b)-> a && b)
   or: (other)->
@@ -178,6 +189,8 @@ class EventStream
         @push event
       else
         Jnoid.more
+  onlyEnd: -> @filter constant false
+  prepend: (x)-> Jnoid.unit(x).merge(@)
   takeWhile: (f) ->
     @withHandler (event) ->
       if event.filter(f)
@@ -185,6 +198,8 @@ class EventStream
       else
         @push Jnoid.end()
         Jnoid.noMore
+  takeUntil: (stopper)->
+    @zipWithAndStop(stopper.onlyEnd().prepend(1), left)
 
 class Dispatcher
   constructor: (unfold, handleEvent) ->
@@ -204,7 +219,10 @@ class Dispatcher
   toString: -> "Dispatcher"
 
 nop = ->
+constant = (x)-> -> x
 id = (x)-> x
+left = (x, y)-> x
+right = (x, y)-> y
 tap = (x, f) ->
   f(x)
   x
@@ -218,7 +236,12 @@ all = (xs, f = id) ->
   for x in xs
     return false if not f(x)
   return true
+any = (xs, f = id) ->
+  for x in xs
+    return true if f(x)
+  return false
 remove = (x, xs) ->
   i = xs.indexOf(x)
   xs.splice(i, 1) if i >= 0
+toArray = (x) -> if x instanceof Array then x else [x]
 toEvent = (x) -> if x instanceof Event then x else Jnoid.next x
