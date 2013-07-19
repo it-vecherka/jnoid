@@ -55,7 +55,6 @@ Jnoid.end = -> new End()
 
 class Event
   isEnd: -> false
-  isInitial: -> false
   isNext: -> false
 
 class Next extends Event
@@ -63,9 +62,6 @@ class Next extends Event
   isNext: -> true
   describe: -> @value
   inspect: -> "Event.Next<#{@value}>"
-
-class Initial extends Next
-  isInitial: -> true
 
 class End extends Event
   constructor: ->
