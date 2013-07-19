@@ -4,7 +4,8 @@
   "description": "DESCRIPTION WILL BE HERE",
   "main": "index.js",
   "scripts": {
-    "test": "mocha --compilers coffee:coffee-script"
+    "test": "mocha --compilers coffee:coffee-script",
+    "simple-example": "coffee examples/simple/index.coffee"
   },
   "repository": {
     "type": "git",
@@ -20,6 +21,8 @@
   },
   "devDependencies": {
     "mocha": "*",
-    "chai": "*"
+    "chai": "*",
+    "express": "*",
+    "underscore": "*"
   }
 }
