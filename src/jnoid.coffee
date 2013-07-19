@@ -4,6 +4,7 @@ Jnoid.fromDOM = ($, e)->
 
 Jnoid.fromList = (list)->
   new EventStream(sendWrapped(list, toEvent))
+
 Jnoid.unit = (args...)->
   Jnoid.fromList(args)
 
@@ -15,8 +16,8 @@ sendWrapped = (values, wrapper) ->
 
 # Dummy objects for asserting.
 # Should not be equal.
-Jnoid.more = "more"
-Jnoid.noMore = "no more"
+Jnoid.more = "<more>"
+Jnoid.noMore = "<no more>"
 
 Jnoid.initial = (value) -> new Initial(value)
 Jnoid.next = (value) -> new Next(value)
@@ -30,7 +31,8 @@ class Event
 class Next extends Event
   constructor: (@value) ->
   isNext: -> true
-  describe: -> "Event.Next <#{@value}>"
+  describe: -> @value
+  inspect: -> "Event.Next<#{@value}>"
 
 class Initial extends Next
   isInitial: -> true
@@ -38,7 +40,8 @@ class Initial extends Next
 class End extends Event
   constructor: ->
   isEnd: -> true
-  describe: -> "Event.End"
+  describe: -> '<end>'
+  inspect: -> "Event.End"
 
 class EventStream
   constructor: (unfold) ->
