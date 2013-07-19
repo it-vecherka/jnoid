@@ -17,50 +17,50 @@ describe 'more and noMore', ->
 
 describe 'fromArray', ->
   it 'works', (done)->
-    h.expectEvents [1, 2, 3],
+    h.expectNext [1, 2, 3],
       Jnoid.fromList([1, 2, 3]),
       done
 
 describe 'unit', ->
   it 'sends a single event', (done)->
-    h.expectEvents [1],
+    h.expectNext [1],
       Jnoid.unit(1),
       done
 
   it 'does not send anything with no arguments', (done)->
-    h.expectEvents [],
+    h.expectNext [],
       Jnoid.unit(),
       done
 
 describe 'sequentially', ->
   it 'sends all events', (done)->
-    h.expectEvents [1, 2, 3],
+    h.expectNext [1, 2, 3],
       Jnoid.sequentially(10, [1, 2, 3]),
       done
 
 describe 'later', ->
   it 'sends one event', (done)->
-    h.expectEvents [1],
+    h.expectNext [1],
       Jnoid.later(10, 1),
       done
 
 describe 'flatMap', ->
   it 'combines spawned streams (trivial case)', (done)->
     stream = Jnoid.fromList([1, 2, 3])
-    h.expectEvents [1, 2, 3],
+    h.expectNext [1, 2, 3],
       stream.flatMap((x)-> Jnoid.unit(x)),
       done
 
   it 'can be aliased as bind', (done)->
     stream = Jnoid.fromList([1, 2, 3])
-    h.expectEvents [1, 2, 3],
+    h.expectNext [1, 2, 3],
       stream.bind((x)-> Jnoid.unit(x)),
       done
 
 describe 'map', ->
   it 'transforms values', (done)->
     stream = Jnoid.fromList([1, 2, 3])
-    h.expectEvents [2, 4, 6],
+    h.expectNext [2, 4, 6],
       stream.map((x)-> x * 2),
       done
 
@@ -69,7 +69,7 @@ describe 'merge', ->
     first = Jnoid.fromList([1, 2, 3])
     second = Jnoid.fromList([10, 20, 30])
     third = Jnoid.fromList([100, 200, 300])
-    h.expectEvents [1, 2, 3, 10, 20, 30, 100, 200, 300],
+    h.expectNext [1, 2, 3, 10, 20, 30, 100, 200, 300],
       first.merge(second, third),
       done
 
@@ -77,7 +77,7 @@ describe 'delay', ->
   it 'sends all events after a delay', (done)->
     first = Jnoid.fromList([1, 2, 3]).delay(10)
     second = Jnoid.fromList([10, 20, 30])
-    h.expectEvents [10, 20, 30, 1, 2, 3],
+    h.expectNext [10, 20, 30, 1, 2, 3],
       first.merge(second),
       done
 
@@ -85,7 +85,7 @@ describe 'zip', ->
   it 'zips streams', (done)->
     first = Jnoid.sequentially(10, [1, 2])
     second = Jnoid.sequentially(15, [100, 200])
-    h.expectEvents [[1, 100], [2, 100], [2, 200]],
+    h.expectNext [[1, 100], [2, 100], [2, 200]],
       first.zip(second),
       done
 
@@ -93,7 +93,7 @@ describe 'zipWith', ->
   it 'zips with function', (done)->
     first = Jnoid.sequentially(10, [1, 2])
     second = Jnoid.sequentially(15, [100, 200])
-    h.expectEvents [101, 102, 202],
+    h.expectNext [101, 102, 202],
       first.zipWith(second, (x, y) -> x + y),
       done
 
@@ -101,7 +101,7 @@ describe 'and', ->
   it 'executes boolean "and" between streams', (done)->
     first = Jnoid.sequentially(10, [false, true])
     second = Jnoid.sequentially(15, [false, true])
-    h.expectEvents [false, false, true],
+    h.expectNext [false, false, true],
       first.and(second),
       done
 
@@ -109,35 +109,35 @@ describe 'or', ->
   it 'executes boolean "or" between streams', (done)->
     first = Jnoid.sequentially(10, [false, true])
     second = Jnoid.sequentially(15, [false, true])
-    h.expectEvents [false, true, true],
+    h.expectNext [false, true, true],
       first.or(second),
       done
 
 describe 'not', ->
   it 'executes boolean "not" on stream', (done)->
     stream = Jnoid.fromList([false, true, false])
-    h.expectEvents [true, false, true],
+    h.expectNext [true, false, true],
       stream.not(),
       done
 
 describe 'filter', ->
   it 'filters stream', (done)->
     stream = Jnoid.fromList([10, 100, 20])
-    h.expectEvents [10, 20],
+    h.expectNext [10, 20],
       stream.filter((x)-> x < 50),
       done
 
 describe 'takeWhile', ->
   it 'takes while', (done)->
     stream = Jnoid.fromList([10, 100, 20])
-    h.expectEvents [10],
+    h.expectNext [10],
       stream.takeWhile((x)-> x < 50),
       done
 
 describe 'onlyEnd', ->
   it 'only passes end', (done)->
     stream = Jnoid.fromList([10, 100, 20])
-    h.expectEvents [],
+    h.expectNext [],
       stream.onlyEnd(),
       done
 
@@ -145,7 +145,7 @@ describe 'onlyEnd', ->
 describe 'prepend', ->
   it 'prepends a value to a stream', (done)->
     stream = Jnoid.fromList([10, 20, 30])
-    h.expectEvents [1, 10, 20, 30],
+    h.expectNext [1, 10, 20, 30],
       stream.prepend(1),
       done
 
@@ -153,6 +153,6 @@ describe 'takeUntil', ->
   it 'takes until other stream ends', (done)->
     stream = Jnoid.sequentially(10, [10, 20, 30, 40, 50])
     stopper = Jnoid.sequentially(35, [100])
-    h.expectEvents [10, 20, 30],
+    h.expectNext [10, 20, 30],
       stream.takeUntil(stopper),
       done

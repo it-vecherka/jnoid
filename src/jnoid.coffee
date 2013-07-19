@@ -29,6 +29,13 @@ Jnoid.fromPoll = (delay, poll) ->
     -> clearInterval(id)
   , poll
 
+
+Jnoid.fromPromise = (promise) ->
+  Jnoid.fromBinder (handler) ->
+    promise.then(handler, (e) -> handler(Jnoid.error(e)))
+    -> promise.abort?()
+  , (value) -> [value, Jnoid.end()]
+
 Jnoid.fromBinder = (binder, transform = id) ->
   new EventStream (sink) ->
     unbinder = binder (args...) ->
@@ -66,6 +73,9 @@ Jnoid.zip = (streams, endChecker = all) ->
             markEnd()
             checkEnd()
             Jnoid.noMore
+          else if event.isError()
+            tap sink(event), (reply) ->
+              unsubAll() if reply == Bacon.noMore
           else
             setValue(event.value)
             if all(values, (x) -> x != undefined)
@@ -92,13 +102,14 @@ Jnoid.zipAndStop = (streams)->
 Jnoid.more = "<more>"
 Jnoid.noMore = "<no more>"
 
-Jnoid.initial = (value) -> new Initial(value)
 Jnoid.next = (value) -> new Next(value)
+Jnoid.error = (error) -> new Error(error)
 Jnoid.end = -> new End()
 
 class Event
   isEnd: -> false
   isNext: -> false
+  isError: -> false
   filter: -> true
 
 class Next extends Event
@@ -107,6 +118,12 @@ class Next extends Event
   describe: -> @value
   inspect: -> "Event.Next<#{@value}>"
   filter: (f)-> f(@value)
+
+class Error extends Event
+  constructor: (@error) ->
+  isError: -> true
+  describe: -> "<error> #{@error}"
+  inspect: -> "Event.Error<#{@error}>"
 
 class End extends Event
   constructor: ->
@@ -135,6 +152,8 @@ class EventStream
         if event.isEnd()
           rootEnd = true
           checkEnd()
+        else if event.isError()
+          sink event
         else if firstOnly and children.length
           Jnoid.more
         else
@@ -189,7 +208,7 @@ class EventStream
         @push event
       else
         Jnoid.more
-  onlyEnd: -> @filter constant false
+  onlyEnd: -> @filter -> false
   prepend: (x)-> Jnoid.unit(x).merge(@)
   takeWhile: (f) ->
     @withHandler (event) ->
@@ -219,7 +238,6 @@ class Dispatcher
   toString: -> "Dispatcher"
 
 nop = ->
-constant = (x)-> -> x
 id = (x)-> x
 left = (x, y)-> x
 right = (x, y)-> y
