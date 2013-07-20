@@ -98,7 +98,7 @@ singleton, but let's pick a straigtforward way.
       describe: -> '<end>'
       inspect: -> "Event.End"
 
-A handy function can be:
+A handy function can be `toEvent`.
 
     toEvent = (x) -> if x instanceof Event then x else new Value x
 
@@ -120,13 +120,13 @@ will release all the resources captured.
 An altertative way will be that if a `subscriber`, and that's the only function
 we've yet discussed that will be written in application code, to return some
 special value, and if it does, we will also do the unsubscribe. By the way, we
-need to define these special value. Let's be simple:
+need to define these special value. Let's be simple.
 
     Jnoid.more = "<more>"
     Jnoid.noMore = "<no more>"
 
 Let's also at once define a poller that asserts if we're given
-`Jnoid.noMore`: We could define it via K-combinator, but it would be even
+`Jnoid.noMore`. We could define it via K-combinator, but it would be even
 more code.
 
 
