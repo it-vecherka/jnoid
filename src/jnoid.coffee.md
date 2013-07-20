@@ -5,11 +5,11 @@ Synopsis
 --------
 
 This source file itself is a [functional reactive
-programming](http://en.wikipedia.org/wiki/Functional_reactive_programming) for
-web clients or nodejs application. Most of it's concepts are borrowed from
-[Bacon.js](https://github.com/raimohanska/bacon.js), but the purpose is to give
-an insight on FRP paradigm and explain the approach in the very code. This is
-why the code is written in [literate
+programming](http://en.wikipedia.org/wiki/Functional_reactive_programming)
+library for web clients or nodejs applications. Most of it's concepts are
+borrowed from [Bacon.js](https://github.com/raimohanska/bacon.js), but the
+purpose is to give an insight on FRP paradigm and explain the approach in the
+very code. This is why the code is written in [literate
 programming](http://en.wikipedia.org/wiki/Literate_programming) style.
 
 There are however another reasons for this library to exist. It's small,
@@ -88,8 +88,7 @@ error pops out. This will have to be correctly composed in our combinators.
       inspect: -> "Event.Error<#{@error}>"
 
 `End` is a special case for the stream end. We could define it as a singleton,
-but let's be simple for a while for the stream end. We could define it as a
-singleton, but let's pick a straigtforward way.
+but let's be simple for a while for the stream end.
 
     class End extends Event
       constructor: ->
@@ -98,7 +97,7 @@ singleton, but let's pick a straigtforward way.
       describe: -> '<end>'
       inspect: -> "Event.End"
 
-A handy function can be `toEvent`.
+A handy function can be:
 
     toEvent = (x) -> if x instanceof Event then x else new Value x
 
@@ -120,19 +119,20 @@ will release all the resources captured.
 An altertative way will be that if a `subscriber`, and that's the only function
 we've yet discussed that will be written in application code, to return some
 special value, and if it does, we will also do the unsubscribe. By the way, we
-need to define these special value. Let's be simple.
+need to define these special value. Let's be simple:
 
     Jnoid.more = "<more>"
     Jnoid.noMore = "<no more>"
 
 Let's also at once define a poller that asserts if we're given
-`Jnoid.noMore`. We could define it via K-combinator, but it would be even
-more code.
-
+`Jnoid.noMore`: 
 
     tapUnsub = (reply, unsub)->
       unsub() if reply == Jnoid.noMore
       reply
+
+We could define it via K-combinator, but it would be even
+more code.
 
 Now finally:
 
@@ -266,7 +266,6 @@ We may also want `take` that just takes `n` events from stream.
         return Jnoid.unit() if count <= 0
         @withHandler (event) ->
           if event.filter(-> false)
-            console.log "Unconditionally pushing"
             @push event
           else
             count--
@@ -277,8 +276,8 @@ We may also want `take` that just takes `n` events from stream.
               @push new End
               Jnoid.noMore
 
-We can even do fancier stuff. Let's define `withStateMachine` that keeps
-remembers previous value:
+We can even do fancier stuff. Let's define `withStateMachine` that
+remembers previous value and can take decisions based on it:
 
       withStateMachine: (initState, f) ->
         state = initState
@@ -316,11 +315,11 @@ it. So the function we pass there will create a new stream based on a value.
 Afterwards we join all the streams collecting values from all of them.
 
 It's going to be a complex stuff. It has to listen to the source stream and
-swawn the streams, joining their unfolds. It'll also have to terminate
+spawn the streams, joining their unfolds. It'll also have to terminate
 properly. The 'and' conditions of termination of the resulting stream is:
 
 * Source has ended.
-* All of the childs have ended.
+* All of the children have ended.
 
 It's going to be huge and not so pretty. Don't worry about it. We'll do
 such things only one more time.
@@ -401,8 +400,8 @@ turning a list of streams to a stream that on value in any of them sends the
 tuple of all their latest values. It can terminate when all the streams ended
 or when any of the streams ended - those'll serve different purposes.
 
-Again as with the `flatMap` it'll be fat, ugly and operates mutable state.
-But you don't have to worry about it as long as your code is pure.
+Again as with the `flatMap` it'll be fat, ugly and operate mutable state.
+But you don't have to worry about it as long as your code will be pure.
 
 These functions do not have the main stream so we define them as class
 functions:
@@ -445,8 +444,8 @@ functions:
 
       @zipAndStop: (streams)-> @zip(streams, any)
 
-The combinator we've just done is unbelievably useful. Let's first expand them
-to `zipWith` and `zipWithAndStop` to see it.
+The combinators we've just done are unbelievably useful. Let's first expand
+them to `zipWith` and `zipWithAndStop` to see it.
 
       @zipWith: (streams, f)-> @zip(streams).map(uncurry(f))
       @zipWithAndStop: (streams, f)-> @zipAndStop(streams).map(uncurry(f))
@@ -476,14 +475,16 @@ Let's combine it with `later` to implement a classic `debounce`:
         @flatMapLatest (value) ->
           Jnoid.later delay, value
 
+Take a break. Think of all the power we got. Now we want to create these
+streams from everything.
+
 Constructors
 ------------
 
 Stop here and think about the basic pattern. New EventStream is defined via
 `unfold` function and we've already negotiated about the rules about it. Let's
 attempt to formalize these rules so that we'll only have to specify the
-behaviour Let's attempt to formalize these rules so that we'll only have to
-specify the behaviour.
+behaviour.
 
 Here binder is the stuff that is going to pop out events and transform is a
 handy way to handle them. Transform is allowed to return an array of events and
