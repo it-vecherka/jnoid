@@ -70,7 +70,7 @@ That was the base class, now we define the classes we're actually going to use.
       constructor: (@value) ->
       isValue: -> true
       describe: -> @value
-      inspect: -> "Event.Next<#{@value}>"
+      inspect: -> "Event.Value<#{@value}>"
 
 This class is going to be used like a functor so we define a couple of helper
 functions in it.
