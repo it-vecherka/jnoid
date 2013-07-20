@@ -585,10 +585,10 @@ observable from the real world. We're good.
         @handleEvent = (event) => handleEvent.apply(this, [event])
         @unfold = (sink) =>
           sinks.push(sink)
-          unsubSelf = unfold @handleEvent
+          unsubSelf = unfold @handleEvent if sinks.length == 1
           ->
             remove(sink, sinks)
-            unsubSelf() unless any sinks
+            unsubSelf?() unless any sinks
 
 Boring stuff
 ------------
