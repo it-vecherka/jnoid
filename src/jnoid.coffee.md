@@ -190,10 +190,10 @@ Accessing
 it's value. Let's define more convenient access to the stream.
 
       onValue: (f) ->
-        @subscribe (event) -> if event.isValue then f(event.value) else Jnoid.more
+        @subscribe (event) -> if event.isValue() then f(event.value) else Jnoid.more
 
       onError: (f) ->
-        @subscribe (event) -> if event.isError then f(event.error) else Jnoid.more
+        @subscribe (event) -> if event.isError() then f(event.error) else Jnoid.more
 
 Transformers
 ------------
