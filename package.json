@@ -23,6 +23,7 @@
     "mocha": "*",
     "chai": "*",
     "express": "*",
-    "underscore": "*"
+    "underscore": "*",
+    "docco": "*"
   }
 }
