@@ -458,7 +458,7 @@ Having `takeUntil` we can do a sophisticated `flatMapLatest`. It'll create a
 steam that joins all the streams created with a spawner function, but in a
 different way. It'll take only the values from the latest stream spawned.
 
-      flatMapLatest: (f) -> @flatMap x => f(x).takeUntil(@)
+      flatMapLatest: (f) -> @flatMap (x) => f(x).takeUntil(@)
 
 Let's combine it with `later` to implement a classic `debounce`:
 
