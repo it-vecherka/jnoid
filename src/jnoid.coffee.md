@@ -183,6 +183,18 @@ This trivial `EventStream` function will help us a lot:
         @subscribe (event) -> console?.log?(args..., event.describe())
         this
 
+Accessing
+---------
+
+`unfold`/`subscribe` are nesessary but raw, as they pass the event class, not
+it's value. Let's define more convenient access to the stream.
+
+      onValue: (f) ->
+        @subscribe (event) -> if event.isValue then f(event.value) else Jnoid.more
+
+      onError: (f) ->
+        @subscribe (event) -> if event.isError then f(event.error) else Jnoid.more
+
 Transformers
 ------------
 
@@ -254,6 +266,32 @@ We may also want `take` that just takes `n` events from stream.
               @push event if count == 0
               @push new End
               Jnoid.noMore
+
+We can even do fancier stuff. Let's define `withStateMachine` that keeps
+remembers previous value:
+
+      withStateMachine: (initState, f) ->
+        state = initState
+        @withHandler (event) ->
+          [newState, outputs] = f(state, event)
+          state = newState
+          reply = Jnoid.more
+          for output in outputs
+            reply = @push output
+            return reply if reply == Jnoid.noMore
+          reply
+
+With this for example we can have `skipDuplicates` which is extremely
+useful.
+
+      skipDuplicates: (isEqual = (a, b) -> a is b) ->
+        @withStateMachine undefined, (prev, event) ->
+          if event.filter(-> false)
+            [prev, [event]]
+          else if prev == undefined or not isEqual(prev, event.value)
+            [event.value, [event]]
+          else
+            [prev, []]
 
 flatMap
 -------
