@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link href="css/bootstrap.min.css" rel="stylesheet" media="screen">
   <link href="css/bootstrap-responsive.min.css" rel="stylesheet" media="screen">
+  <script src="http://code.jquery.com/jquery-latest.min.js" type="text/javascript"></script>
   <script type="text/javascript" src="/jnoid.js"></script>
   <style type="text/css">
     @media(min-width:980px) {
@@ -42,11 +43,35 @@
       </div>
       <div class="control-group">
         <div class="controls">
-          <button type="submit" class="btn" disabled="disabled">Sign in</button>
+          <button type="submit" id="submit" class="btn" disabled="disabled">Sign in</button>
         </div>
       </div>
     </form>
   </div>
 
+  <script type="text/javascript" charset="utf-8">
+    function textFieldValue(textField) {
+      function value() { return textField.val(); }
+      return Jnoid.fromDOM(textField, "keyup input").
+               map(value).
+               prepend(value()).
+               skipDuplicates();
+    }
+
+    login = textFieldValue($("#inputLogin"));
+    fullname = textFieldValue($("#inputFullname"));
+
+    function nonEmpty(x) { return x.length > 0; }
+
+    loginEntered = login.map(nonEmpty);
+    fullnameEntered = fullname.map(nonEmpty);
+    buttonEnabled = loginEntered.and(fullnameEntered);
+
+    function disableButton(disable) {
+      $("#submit").attr("disabled", disable);
+    }
+
+    buttonEnabled.not().onValue(disableButton);
+  </script>
 </body>
 </html>
