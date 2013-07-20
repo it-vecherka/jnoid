@@ -231,6 +231,16 @@ To have values, however, we'll have to define a custom function:
         @withHandler (event) ->
           if event.isValue() then @push event else Jnoid.more
 
+Let's also declare `mapErrors` that will turn errors into values using
+transform function.
+
+      mapErrors: (f)->
+        @withHandler (event) ->
+          if event.isError()
+            @push new Value f event.error
+          else
+            @push event
+
 Another handy function is transit a stream to a stopper. On any event it'll
 just stop.
 

@@ -51,7 +51,7 @@
 
   <script type="text/javascript" charset="utf-8">
     function textFieldValue(textField) {
-      function value() { return textField.val(); }
+      var value = function() { return textField.val(); }
       return Jnoid.fromDOM(textField, "keyup input").
                map(value).
                prepend(value()).
@@ -61,17 +61,32 @@
     login = textFieldValue($("#inputLogin"));
     fullname = textFieldValue($("#inputFullname"));
 
-    function nonEmpty(x) { return x.length > 0; }
-
-    loginEntered = login.map(nonEmpty);
-    fullnameEntered = fullname.map(nonEmpty);
-    buttonEnabled = loginEntered.and(fullnameEntered);
-
-    function disableButton(disable) {
-      $("#submit").attr("disabled", disable);
+    var nonEmpty = function(x) { return x.length > 0; }
+    var toLoginCheck = function(login) {
+      return { url: "/check-login/" + login};
     }
 
-    buttonEnabled.not().onValue(disableButton);
+    checkResponse = login.filter(nonEmpty).map(toLoginCheck).promises($.ajax);
+    loginAvailable = checkResponse.map(function () { return true }).
+                                   mapErrors(function () { return false } );
+
+    var validateLogin = nonEmpty;
+    var validateFullname = function(x) {
+      return nonEmpty(x) && x.length < 30;
+    }
+
+    loginOk = login.map(validateLogin);
+    fullnameOk = fullname.map(validateFullname);
+
+    buttonEnabled = loginOk.and(fullnameOk).and(loginAvailable);
+
+    function setAttribute(element, attribute) {
+      return function(value) {
+        $(element).attr(attribute, value)
+      }
+    }
+
+    buttonEnabled.not().onValue(setAttribute($("#submit"), "disabled"));
   </script>
 </body>
 </html>
