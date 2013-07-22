@@ -1,7 +1,7 @@
 assert = require('chai').assert
 h = require('./test_helpers')
 Jnoid = require '../jnoid.coffee.md'
-{Event, Value, Error, End} = Jnoid
+{Event, Value, Error, End, EventStream} = Jnoid
 
 describe 'more and noMore', ->
   it 'is the same', ->
@@ -79,6 +79,32 @@ describe 'unit', ->
     h.expectValues [],
       Jnoid.unit(),
       done
+
+describe 'onValue', ->
+  it 'listens to values only', ->
+    stream = new EventStream (sink)->
+      sink new Value 5
+      sink new Error 'whut'
+      sink new Value 10
+
+    events = []
+    stream.onValue (e)-> events.push e
+    setTimeout ->
+      assert.equal [5, 10], events
+    , 1000
+
+describe 'onError', ->
+  it 'listens to values only', ->
+    stream = new EventStream (sink)->
+      sink new Value 5
+      sink new Error 'whut'
+      sink new Value 10
+
+    events = []
+    stream.onError (e)-> events.push e
+    setTimeout ->
+      assert.equal ['whut'], events
+    , 1000
 
 describe 'map', ->
   it 'transforms values', (done)->
