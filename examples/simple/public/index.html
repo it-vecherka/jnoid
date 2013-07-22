@@ -51,39 +51,34 @@
 
   <script type="text/javascript" charset="utf-8">
     function textFieldValue(textField) {
-      var value = function() { return textField.val(); }
       return Jnoid.fromDOM(textField, "keyup input").
-               map(value).
-               prepend(value()).
-               skipDuplicates();
+                   map(function (e) { return $(e.target).val() }).
+                   prepend($(textField.val()))).
+                   skipDuplicates();
     }
 
-    login = textFieldValue($("#inputLogin"));
-    fullname = textFieldValue($("#inputFullname"));
+    var login = textFieldValue($("#inputLogin"));
+    var fullname = textFieldValue($("#inputFullname"));
 
     var nonEmpty = function(x) { return x.length > 0; }
     var toLoginCheck = function(login) {
       return { url: "/check-login/" + login};
     }
 
-    checkResponse = login.filter(nonEmpty).map(toLoginCheck).promises($.ajax);
-    loginAvailable = checkResponse.map(function () { return true }).
-                                   mapErrors(function () { return false } );
+    var checkResponse = login.filter(nonEmpty).map(toLoginCheck).promises($.ajax);
+    var loginAvailable = checkResponse.map(function () { return true }).
+                                       mapErrors(function () { return false } );
 
     var validateLogin = nonEmpty;
-    var validateFullname = function(x) {
-      return nonEmpty(x) && x.length < 30;
-    }
+    var validateFullname = function(x) { return nonEmpty(x) && x.length < 30; }
 
-    loginOk = login.map(validateLogin);
-    fullnameOk = fullname.map(validateFullname);
+    var loginOk = login.map(validateLogin);
+    var fullnameOk = fullname.map(validateFullname);
 
-    buttonEnabled = loginOk.and(fullnameOk).and(loginAvailable);
+    var buttonEnabled = loginOk.and(fullnameOk).and(loginAvailable);
 
     function setAttribute(element, attribute) {
-      return function(value) {
-        $(element).attr(attribute, value)
-      }
+      return function(value) { $(element).attr(attribute, value) }
     }
 
     buttonEnabled.not().onValue(setAttribute($("#submit"), "disabled"));
