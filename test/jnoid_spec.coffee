@@ -86,6 +86,7 @@ describe 'onValue', ->
       sink new Value 5
       sink new Error 'whut'
       sink new Value 10
+      sink new End
 
     events = []
     stream.onValue (e)-> events.push e
@@ -99,6 +100,7 @@ describe 'onError', ->
       sink new Value 5
       sink new Error 'whut'
       sink new Value 10
+      sink new End
 
     events = []
     stream.onError (e)-> events.push e
@@ -111,6 +113,66 @@ describe 'map', ->
     stream = Jnoid.fromList([1, 2, 3])
     h.expectValues [2, 4, 6],
       stream.map((x)-> x * 2),
+      done
+
+describe 'filter', ->
+  it 'filters stream', (done)->
+    stream = Jnoid.fromList([10, 100, 20])
+    h.expectValues [10, 20],
+      stream.filter((x)-> x < 50),
+      done
+
+describe 'errors', ->
+  it 'returns only errors', (done)->
+    stream = new EventStream (sink)->
+      sink new Value 50
+      sink new Error 'whut'
+      sink new Value 100
+      sink new End
+
+    h.expectErrors ['whut'], stream.errors(), done
+
+describe 'values', ->
+  it 'returns only values', (done)->
+    stream = new EventStream (sink)->
+      sink new Value 5
+      sink new Error 'whut'
+      sink new Value 10
+      sink new End
+
+    h.expectValues [5, 10], stream.values(), done
+
+describe 'mapErrors', ->
+  it 'maps errors to values', (done)->
+    stream = new EventStream (sink)->
+      sink new Value 5
+      sink new Error 'whut'
+      sink new Value 10
+      sink new End
+
+    h.expectValues [5, 4, 10],
+      stream.mapErrors((x) -> x.length),
+      done
+
+describe 'takeWhile', ->
+  it 'takes while', (done)->
+    stream = Jnoid.fromList([10, 100, 20])
+    h.expectValues [10],
+      stream.takeWhile((x)-> x < 50),
+      done
+
+describe 'take', ->
+  it 'takes n', (done)->
+    stream = Jnoid.fromList([10, 100, 20, 200])
+    h.expectValues [10, 100],
+      stream.take(2),
+      done
+
+describe 'skipDuplicates', ->
+  it 'skips duplicates', (done)->
+    stream = Jnoid.fromList([10, 10, 200, 200])
+    h.expectValues [10, 200],
+      stream.skipDuplicates(),
       done
 
 describe 'flatMap', ->
@@ -129,28 +191,36 @@ describe 'merge', ->
       first.merge(second, third),
       done
 
-describe 'delay', ->
-  it 'sends all events after a delay', (done)->
-    first = Jnoid.fromList([1, 2, 3]).delay(10)
-    second = Jnoid.fromList([10, 20, 30])
-    h.expectValues [10, 20, 30, 1, 2, 3],
-      first.merge(second),
-      done
-
 describe 'zip', ->
   it 'zips streams', (done)->
     first = Jnoid.sequentially(10, [1, 2])
-    second = Jnoid.sequentially(15, [100, 200])
-    h.expectValues [[1, 100], [2, 100], [2, 200]],
+    second = Jnoid.sequentially(15, [100, 200, 300])
+    h.expectValues [[1, 100], [2, 100], [2, 200], [2, 300]],
       Jnoid.zip([first, second]),
       done
 
 describe 'zipWith', ->
   it 'zips with function', (done)->
     first = Jnoid.sequentially(10, [1, 2])
-    second = Jnoid.sequentially(15, [100, 200])
-    h.expectValues [101, 102, 202],
+    second = Jnoid.sequentially(15, [100, 200, 300])
+    h.expectValues [101, 102, 202, 302],
       Jnoid.zipWith([first, second], (x, y) -> x + y),
+      done
+
+describe 'zipAndStop', ->
+  it 'zips streams and stops on first end', (done)->
+    first = Jnoid.sequentially(10, [1, 2])
+    second = Jnoid.sequentially(15, [100, 200, 300])
+    h.expectValues [[1, 100], [2, 100]],
+      Jnoid.zipAndStop([first, second]),
+      done
+
+describe 'zipWithAndStop', ->
+  it 'zips with function and stops on first end', (done)->
+    first = Jnoid.sequentially(10, [1, 2])
+    second = Jnoid.sequentially(15, [100, 200, 300])
+    h.expectValues [101, 102],
+      Jnoid.zipWithAndStop([first, second], (x, y) -> x + y),
       done
 
 describe 'and', ->
@@ -174,27 +244,6 @@ describe 'not', ->
     stream = Jnoid.fromList([false, true, false])
     h.expectValues [true, false, true],
       stream.not(),
-      done
-
-describe 'filter', ->
-  it 'filters stream', (done)->
-    stream = Jnoid.fromList([10, 100, 20])
-    h.expectValues [10, 20],
-      stream.filter((x)-> x < 50),
-      done
-
-describe 'take', ->
-  it 'takes n', (done)->
-    stream = Jnoid.fromList([10, 100, 20, 200])
-    h.expectValues [10, 100],
-      stream.take(2),
-      done
-
-describe 'takeWhile', ->
-  it 'takes while', (done)->
-    stream = Jnoid.fromList([10, 100, 20])
-    h.expectValues [10],
-      stream.takeWhile((x)-> x < 50),
       done
 
 describe 'prepend', ->

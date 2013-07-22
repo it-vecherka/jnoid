@@ -4,8 +4,9 @@ Jnoid = require '../jnoid.coffee.md'
 module.exports =
   expectEvents: (expectedEvents, stream, done)->
     events = []
-    stream.subscribe (event) ->
+    unsub = stream.subscribe (event) ->
       if event.isEnd()
+        unsub?()
         assert.deepEqual(events, expectedEvents)
         done()
       else
