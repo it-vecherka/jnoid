@@ -1,6 +1,6 @@
 assert = require('chai').assert
 h = require('./test_helpers')
-Jnoid = require '../src/jnoid'
+Jnoid = require '../src/jnoid.coffee.md'
 
 success = undefined
 fail = undefined
@@ -14,7 +14,7 @@ nop = ->
 
 describe "Jnoid.fromPromise", ->
   it "produces value and ends on success", (done)->
-    h.expectNext ["A"],
+    h.expectValues ["A"],
       Jnoid.fromPromise(promise),
       done
     success("A")
@@ -27,7 +27,7 @@ describe "Jnoid.fromPromise", ->
 
   it "unsubscribes", ->
     events = []
-    unsub = Jnoid.fromPromise(promise).onValue((e) => events.push(e))
+    unsub = Jnoid.fromPromise(promise).subscribe((e) => events.push(e))
     unsub()
     success("A")
     assert.deepEqual(events, [])
@@ -36,7 +36,7 @@ describe "Jnoid.fromPromise", ->
     isAborted = false
     promise.abort = ->
       isAborted = true
-    unsub = Jnoid.fromPromise(promise).onValue(nop)
+    unsub = Jnoid.fromPromise(promise).subscribe(nop)
     unsub()
     delete promise.abort
     assert.equal(isAborted, true)

@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link href="css/bootstrap.min.css" rel="stylesheet" media="screen">
   <link href="css/bootstrap-responsive.min.css" rel="stylesheet" media="screen">
+  <script src="http://code.jquery.com/jquery-latest.min.js" type="text/javascript"></script>
   <script type="text/javascript" src="/jnoid.js"></script>
   <style type="text/css">
     @media(min-width:980px) {
@@ -42,11 +43,45 @@
       </div>
       <div class="control-group">
         <div class="controls">
-          <button type="submit" class="btn" disabled="disabled">Sign in</button>
+          <button type="submit" id="submit" class="btn" disabled="disabled">Sign in</button>
         </div>
       </div>
     </form>
   </div>
 
+  <script type="text/javascript" charset="utf-8">
+    function textFieldValue(textField) {
+      return Jnoid.fromDOM(textField, "keyup input").
+                   map(function (e) { return $(e.target).val() }).
+                   prepend($(textField.val()))).
+                   skipDuplicates();
+    }
+
+    var login = textFieldValue($("#inputLogin"));
+    var fullname = textFieldValue($("#inputFullname"));
+
+    var nonEmpty = function(x) { return x.length > 0; }
+    var toLoginCheck = function(login) {
+      return { url: "/check-login/" + login};
+    }
+
+    var checkResponse = login.filter(nonEmpty).map(toLoginCheck).promises($.ajax);
+    var loginAvailable = checkResponse.map(function () { return true }).
+                                       mapErrors(function () { return false } );
+
+    var validateLogin = nonEmpty;
+    var validateFullname = function(x) { return nonEmpty(x) && x.length < 30; }
+
+    var loginOk = login.map(validateLogin);
+    var fullnameOk = fullname.map(validateFullname);
+
+    var buttonEnabled = loginOk.and(fullnameOk).and(loginAvailable);
+
+    function setAttribute(element, attribute) {
+      return function(value) { $(element).attr(attribute, value) }
+    }
+
+    buttonEnabled.not().onValue(setAttribute($("#submit"), "disabled"));
+  </script>
 </body>
 </html>

@@ -7,9 +7,9 @@ app = express()
 app.use express.static "#{__dirname}/public"
 
 app.get '/jnoid.js', (req, res)->
-  source = fs.readFileSync(fs.realpathSync("#{__dirname}/../../src/jnoid.coffee", "utf-8")).toString()
+  source = fs.readFileSync(fs.realpathSync("#{__dirname}/../../src/jnoid.coffee.md", "utf-8")).toString()
   res.set('Content-Type', 'text/javascript')
-  res.send coffeescript.compile source,
+  res.send coffeescript.compile source, literate: true
 
 app.get '/check-login/:login', (req, res)->
   if _.contains ['Peter', 'Jack', 'Jackson', 'Samuel'], req.params.login
