@@ -1,6 +1,6 @@
 assert = require('chai').assert
 h = require('./test_helpers')
-Jnoid = require '../src/jnoid.coffee.md'
+Jnoid = require '../jnoid.coffee.md'
 
 describe 'more and noMore', ->
   it 'is the same', ->

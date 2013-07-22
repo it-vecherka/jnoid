@@ -1,5 +1,5 @@
 assert = require('chai').assert
-Jnoid = require '../src/jnoid.coffee.md'
+Jnoid = require '../jnoid.coffee.md'
 
 module.exports =
   expectEvents: (expectedEvents, stream, done)->
