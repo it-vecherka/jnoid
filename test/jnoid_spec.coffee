@@ -185,15 +185,3 @@ describe 'takeUntil', ->
     h.expectValues [10, 20, 30],
       stream.takeUntil(stopper),
       done
-
-describe 'sequentially', ->
-  it 'sends all events', (done)->
-    h.expectValues [1, 2, 3],
-      Jnoid.sequentially(10, [1, 2, 3]),
-      done
-
-describe 'later', ->
-  it 'sends one event', (done)->
-    h.expectValues [1],
-      Jnoid.later(10, 1),
-      done
