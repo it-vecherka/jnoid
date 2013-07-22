@@ -197,21 +197,18 @@ it's value. Let's define more convenient access to the stream.
 Transformers
 ------------
 
-Let's give a way to transform the output. A common way to do it will allow
-overriding the handler:
-```coffeescript
-  withHandler: (handler) ->
-    dispatcher = new Dispatcher(@unfold, handler)
-    new EventStream(dispatcher.unfold)
-```
-Let's now give `map` and `filter` - the most basic combinators in the world.
-`map` transforms the values of events, `filter` filters the events based on
-their values.
+Let's give a way to transform the output. The most basic combinators are
+`map` and `filter`.  Combinator `map` transforms the values of events,
+while `filter` filters the events based on their values.
 
 Recall how we carefully declared `fmap` and `filter` in `Event` class. This way
 our `map` and `filter` will only touch values and leave errors and end at they
 are.
 ```coffeescript
+  withHandler: (handler) ->
+    dispatcher = new Dispatcher(@unfold, handler)
+    new EventStream(dispatcher.unfold)
+
   map: (f) ->
     @withHandler (event) -> @push event.fmap(f)
 
@@ -225,7 +222,7 @@ We can now receive only non-value events this way:
 To have values, however, we'll have to define a custom function:
 ```coffeescript
   values: ->
-    @withHandler (event) -> if event.isValue() then @push event else Jnoid.more
+    @withHandler (event) -> unless event.isError() then @push event else Jnoid.more
 ```
 Let's also declare `mapErrors` that will turn errors into values using
 transform function.
