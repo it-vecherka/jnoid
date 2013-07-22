@@ -653,10 +653,19 @@ We now need to make our objects usable outside.
     else
       @Jnoid = Jnoid
 
-Wrapping up
------------
+Where to go now
+---------------
 
 This is a library that demonstrates lots of interesting things. First of all
 it's Functional Reactive Programming paradigm. Second is functional design at
 all. We encourage you to try to create your own combinators above to posess
 this power.
+
+You can also:
+
+* Read about functional reactive programming on [Haskell
+wiki](http://www.haskell.org/haskellwiki/Functional_Reactive_Programming)
+* Look at more production-ready [Bacon.js](https://github.com/raimohanska/bacon.js)
+* Check the example problem in `examples/` folder. You can run the example via
+`npm run-script simple-example`. The very solution is in
+[`examples/simple/public/index.html`](https://github.com/it-vecherka/jnoid/blob/master/examples/simple/public/index.html)
