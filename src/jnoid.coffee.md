@@ -1,5 +1,5 @@
-Functional reactive programming sample library
-==============================================
+Jnoid
+=====
 
 Synopsis
 --------
