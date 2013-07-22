@@ -645,7 +645,6 @@ We now need to make our objects usable outside.
     Jnoid.Error = Error
     Jnoid.End = End
 
-
     if define?.amd
       define [], -> Jnoid
     else if module?.exports
