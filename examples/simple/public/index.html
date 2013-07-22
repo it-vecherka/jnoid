@@ -53,7 +53,7 @@
     function textFieldValue(textField) {
       return Jnoid.fromDOM(textField, "keyup input").
                    map(function (e) { return $(e.target).val() }).
-                   prepend($(textField.val()))).
+                   prepend($(textField.val())).
                    skipDuplicates();
     }
 
