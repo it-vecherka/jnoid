@@ -63,7 +63,7 @@ describe 'Event', ->
     it 'does not fmap', ->
       assert.deepEqual(new End().fmap((x) -> x + 5), new End)
 
-describe 'fromArray', ->
+describe 'fromList', ->
   it 'works', (done)->
     h.expectValues [1, 2, 3],
       Jnoid.fromList([1, 2, 3]),
