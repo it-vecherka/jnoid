@@ -59,7 +59,6 @@ class Event
   isEnd: -> false
   isValue: -> false
   isError: -> false
-  test: (f)-> f(@)
   filter: -> true
   fmap: -> @
 ```
@@ -214,12 +213,10 @@ our `map` and `filter` will only touch values and leave errors and end at they
 are.
 ```coffeescript
   map: (f) ->
-    @withHandler (event) ->
-      @push event.fmap(f)
+    @withHandler (event) -> @push event.fmap(f)
 
   filter: (f) ->
-    @withHandler (event) ->
-      if event.filter(f) then @push event else Jnoid.more
+    @withHandler (event) -> if event.filter(f) then @push event else Jnoid.more
 ```
 We can now receive only non-value events this way:
 ```coffeescript
@@ -228,8 +225,7 @@ We can now receive only non-value events this way:
 To have values, however, we'll have to define a custom function:
 ```coffeescript
   values: ->
-    @withHandler (event) ->
-      if event.isValue() then @push event else Jnoid.more
+    @withHandler (event) -> if event.isValue() then @push event else Jnoid.more
 ```
 Let's also declare `mapErrors` that will turn errors into values using
 transform function.
@@ -257,7 +253,7 @@ while assering their values with a given function remains true.
       if event.filter(f)
         @push event
       else
-        @push new End()
+        @push new End
         Jnoid.noMore
 ```
 We may also want `take` that just takes `n` events from stream.
@@ -550,7 +546,7 @@ Jnoid.fromPromise = (promise) ->
   Jnoid.fromBinder (handler) ->
     promise.then handler, (e) -> handler new Error e
     -> promise.abort?()
-  , (value) -> [value, new End()]
+  , (value) -> [value, new End]
 ```
 Interesting that with `fromPromise` and things like `flatMap` we can do a
 sophisticated thing: `promises()` stream transformer. It'll turn a stream
