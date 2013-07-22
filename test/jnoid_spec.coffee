@@ -1,6 +1,7 @@
 assert = require('chai').assert
 h = require('./test_helpers')
 Jnoid = require '../jnoid.coffee.md'
+{Event, Value, Error, End} = Jnoid
 
 describe 'more and noMore', ->
   it 'is the same', ->
@@ -9,6 +10,58 @@ describe 'more and noMore', ->
 
   it 'is different', ->
     assert.notEqual(Jnoid.more, Jnoid.noMore)
+
+
+describe 'Event', ->
+  describe 'Value', ->
+    it 'is value, is not error, is not end', ->
+      event = new Value 5
+      assert.ok(event.isValue())
+      assert.notOk(event.isError())
+      assert.notOk(event.isEnd())
+
+    it 'returns value', ->
+      event = new Value 5
+      assert.equal(event.value, 5)
+
+    it 'filters value', ->
+      assert.ok(new Value(5).filter((x)-> x < 10))
+      assert.notOk(new Value(15).filter((x)-> x < 10))
+
+    it 'fmaps value', ->
+      assert.deepEqual(new Value(5).fmap((x) -> x + 5),
+        new Value(10))
+
+  describe 'Error', ->
+    it 'is not a value, is error, is not end', ->
+      event = new Error 'whut'
+      assert.notOk(event.isValue())
+      assert.ok(event.isError())
+      assert.notOk(event.isEnd())
+
+    it 'returns error', ->
+      event = new Error 'whut'
+      assert.equal(event.error, 'whut')
+
+    it 'does not filter', ->
+      assert.ok(new Error('whut').filter((x)-> x < 10))
+
+    it 'does not fmap', ->
+      assert.deepEqual(new Error('whut').fmap((x) -> x + 5),
+        new Error('whut'))
+
+  describe 'End', ->
+    it 'is not a value, is not an error, is end', ->
+      event = new End
+      assert.notOk(event.isValue())
+      assert.notOk(event.isError())
+      assert.ok(event.isEnd())
+
+    it 'does not filter', ->
+      assert.ok(new End().filter((x)-> x < 10))
+
+    it 'does not fmap', ->
+      assert.deepEqual(new End().fmap((x) -> x + 5), new End)
 
 describe 'fromArray', ->
   it 'works', (done)->

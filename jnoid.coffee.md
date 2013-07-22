@@ -59,7 +59,6 @@ At first we define the event wrapper we're going to use. Pretty straigtforward.
       isEnd: -> false
       isValue: -> false
       isError: -> false
-      test: (f)-> f(@)
       filter: -> true
       fmap: -> @
 
