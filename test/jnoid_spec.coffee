@@ -142,7 +142,7 @@ describe 'values', ->
 
     h.expectValues [5, 10], stream.values(), done
 
-describe 'mapErrors', ->
+describe 'recover', ->
   it 'maps errors to values', (done)->
     stream = new EventStream (sink)->
       sink new Value 5
@@ -151,7 +151,7 @@ describe 'mapErrors', ->
       sink new End
 
     h.expectValues [5, 4, 10],
-      stream.mapErrors((x) -> x.length),
+      stream.recover((x) -> x.length),
       done
 
 describe 'takeWhile', ->

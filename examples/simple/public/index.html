@@ -26,19 +26,20 @@
   </div>
 
   <div class="container">
+    <p>Notice</p>
     <form class="form-horizontal" action="/register" method='get'>
-      <div class="control-group">
+      <div class="control-group" id="login">
         <label class="control-label" for="inputLogin">Login</label>
         <div class="controls">
           <input type="text" id="inputLogin" placeholder="Login" name="login">
-          <span class="help-block">Your login should not be 'Peter', 'Jack', 'Jackson' and 'Samuel'.</span>
+          <span class="help-block"><!-- to display validation errors --></span>
         </div>
       </div>
-      <div class="control-group">
+      <div class="control-group" id="fullname">
         <label class="control-label" for="inputPassword">Fullname</label>
         <div class="controls">
           <input type="text" id="inputFullname" placeholder="Fullname" name="fullname">
-          <span class="help-block">Use any fullname with length &lt; 30 symbols.</span>
+          <span class="help-block"><!-- to display validation errors --></span>
         </div>
       </div>
       <div class="control-group">
@@ -57,8 +58,8 @@
                    skipDuplicates();
     }
 
-    var login = textFieldValue($("#inputLogin"));
-    var fullname = textFieldValue($("#inputFullname"));
+    var login = textFieldValue($("#login input"));
+    var fullname = textFieldValue($("#fullname input"));
 
     var nonEmpty = function(x) { return x.length > 0; }
     var toLoginCheck = function(login) {
@@ -66,22 +67,29 @@
     }
 
     var checkResponse = login.filter(nonEmpty).map(toLoginCheck).promises($.ajax);
-    var loginAvailable = checkResponse.map(function () { return true }).
-                                       mapErrors(function () { return false } );
+    var availabilityError = checkResponse.map(function () { return "" }).
+                                          recover(function (r) { return r.responseText })
+    var loginAvailable = availabilityError.map(nonEmpty).not();
 
-    var validateLogin = nonEmpty;
-    var validateFullname = function(x) { return nonEmpty(x) && x.length < 30; }
-
-    var loginOk = login.map(validateLogin);
-    var fullnameOk = fullname.map(validateFullname);
+    var loginPresent = login.map(nonEmpty);
+    var fullnamePresent = fullname.map(nonEmpty);
+    var loginOk = loginPresent.and(loginAvailable);
+    var fullnameOk = fullnamePresent;
 
     var buttonEnabled = loginOk.and(fullnameOk).and(loginAvailable);
+    var loginError = loginOk.zipWith(availabilityError,
+                                     function (ok, error) { return ok ? "" : error.toString() })
 
-    function setAttribute(element, attribute) {
+    var setAttribute = function(element, attribute) {
       return function(value) { $(element).attr(attribute, value) }
     }
 
+    var setText = function(element) {
+      return function(value) { $(element).text(value) }
+    }
+
     buttonEnabled.not().onValue(setAttribute($("#submit"), "disabled"));
+    loginError.onValue(setText($("#login .help-block")));
   </script>
 </body>
 </html>

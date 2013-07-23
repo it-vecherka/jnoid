@@ -224,10 +224,10 @@ To have values, however, we'll have to define a custom function:
       values: ->
         @withHandler (event) -> unless event.isError() then @push event else Jnoid.more
 
-Let's also declare `mapErrors` that will turn errors into values using
+Let's also declare `recover` that will map errors into values using
 transform function.
 
-      mapErrors: (f)->
+      recover: (f)->
         @withHandler (event) ->
           if event.isError()
             @push new Value f event.error
@@ -442,6 +442,13 @@ them to `zipWith` and `zipWithAndStop` to see it.
 
       @zipWith: (streams, f)-> @zip(streams).map(uncurry(f))
       @zipWithAndStop: (streams, f)-> @zipAndStop(streams).map(uncurry(f))
+
+Let's proxy this useful stuff to instance methods:
+
+      zip: (others...)-> EventStream.zip [@, others...]
+      zipWith: (others..., f)-> EventStream.zipWith [@, others...], f
+      zipAndStop: (others...)-> EventStream.zipAndStop [@, others...]
+      zipWithAndStop: (others..., f)-> EventStream.zipWithAndStop [@, others...], f
 
 Now let's go and define boolean algebra over our streams:
 

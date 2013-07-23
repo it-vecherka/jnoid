@@ -18,7 +18,7 @@ app.get '/check-login/:login', (req, res)->
     res.send 200, "The name '#{req.params.login}' is available for new login"
 
 app.get '/register', (req, res)->
-  if req.query['login'] && req.query['fullname'] && req.query['fullname'].length < 30
+  if req.query['login'] && req.query['fullname']
     res.send 200, "Ok"
   else
     res.send 406, "Not Acceptable"
