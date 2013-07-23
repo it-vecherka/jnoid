@@ -78,8 +78,10 @@
 
     var buttonEnabled = loginOk.and(fullnameOk).and(loginAvailable);
     var loginError = loginOk.zipWith(availabilityError,
-                                     function (ok, error) { return ok ? "" : error.toString() })
+                                     function (ok, error) { return ok ? "" : error })
 
+
+    // Side effects part
     var setAttribute = function(element, attribute) {
       return function(value) { $(element).attr(attribute, value) }
     }
