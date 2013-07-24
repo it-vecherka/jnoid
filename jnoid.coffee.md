@@ -174,6 +174,14 @@ An interesting thing about `EventStream.unit` is that if it's called with one
 of unit. If we later define bind, and they will conform monadic laws,
 `EventStream` will become a monad. It's FP, dude!
 
+But in this case we need another unit - to spawn stream of one error.
+
+      @error = (error)->
+        new EventStream (sink)->
+          sink new Error error
+          sink new End
+          nop
+
 ### Logging
 
 This trivial `EventStream` function will help us a lot:

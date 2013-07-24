@@ -174,6 +174,14 @@ An interesting thing about `EventStream.unit` is that if it's called with one
 of unit. If we later define bind, and they will conform monadic laws,
 `EventStream` will become a monad. It's FP, dude!
 
+But in this case we need another unit - to spawn stream of one error.
+```coffeescript
+  @error = (error)->
+    new EventStream (sink)->
+      sink new Error error
+      sink new End
+      nop
+```
 ### Logging
 
 This trivial `EventStream` function will help us a lot:
@@ -233,14 +241,6 @@ transform function.
         @push new Value f event.error
       else
         @push event
-```
-Another handy function is transit a stream to a stopper. On any event it'll
-just stop.
-```coffeescript
-  toStopper: ->
-    @withHandler (event) ->
-      @push new End
-      Jnoid.noMore
 ```
 As a slightly more fun stuff, here's `takeWhile`. It takes values from stream
 while assering their values with a given function remains true.
@@ -459,6 +459,10 @@ Now let's go and define boolean algebra over our streams:
 Feel the power? Let's do a complex stuff. Combine two streams so that we pop
 the first stream until we have a value on the second stream.
 ```coffeescript
+  toStopper: ->
+    @withHandler (event) ->
+      @push new End
+      Jnoid.noMore
   prepend: (x)-> EventStream.unit(x).merge(@)
   takeUntil: (stopper) ->
     EventStream.zipWithAndStop [@, stopper.toStopper().prepend(1)], left
