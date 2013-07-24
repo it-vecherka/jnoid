@@ -26,7 +26,6 @@
   </div>
 
   <div class="container">
-    <p>Notice</p>
     <form class="form-horizontal" action="/register" method='get'>
       <div class="control-group" id="login">
         <label class="control-label" for="inputLogin">Login</label>
@@ -51,35 +50,62 @@
   </div>
 
   <script type="text/javascript" charset="utf-8">
-    function textFieldValue(textField) {
+    var textFieldValue = function(textField) {
       return Jnoid.fromDOM(textField, "keyup input").
                    map(function (e) { return $(e.target).val() }).
-                   prepend($(textField.val())).
+                   prepend($(textField).val()).
                    skipDuplicates();
+    }
+
+    var Messages = {
+      provideLogin: "Provide login",
+      provideFullname: "Provide fullname",
+      fullnameTooLong: "Fullname is too long",
+      checking: "Checking",
+      good: "Good"
+    }
+
+    var isGood = function (message) { return message === Messages.good }
+    var nonEmpty = function (x) { return x.length > 0 }
+
+    var validateAjax = function(params) {
+      return Jnoid.fromPromise($.ajax(params)).
+        prepend(Messages.checking).
+        map(function () { return Messages.good }).
+        recover(function (e) { return e.responseText } )
+    }
+
+    var validateLogin = function (login) {
+      if (login.length <= 0) {
+        return Messages.provideLogin
+      } else {
+        return Messages.good
+      }
+    }
+
+    var validateFullname = function (fullname) {
+      if (fullname.length <= 0) {
+        return Messages.provideFullname
+      } else if (fullname.length > 30) {
+        return Messages.fullnameTooLong
+      } else {
+        return Messages.good
+      }
     }
 
     var login = textFieldValue($("#login input"));
     var fullname = textFieldValue($("#fullname input"));
 
-    var nonEmpty = function(x) { return x.length > 0; }
-    var toLoginCheck = function(login) {
-      return { url: "/check-login/" + login};
-    }
+    var toLoginCheck = function(login) { return { url: "/check-login/" + login}; }
 
-    var checkResponse = login.filter(nonEmpty).map(toLoginCheck).promises($.ajax);
-    var availabilityError = checkResponse.map(function () { return "" }).
-                                          recover(function (r) { return r.responseText })
-    var loginAvailable = availabilityError.map(nonEmpty).not();
 
-    var loginPresent = login.map(nonEmpty);
-    var fullnamePresent = fullname.map(nonEmpty);
-    var loginOk = loginPresent.and(loginAvailable);
-    var fullnameOk = fullnamePresent;
+    var availMessages = login.filter(nonEmpty).map(toLoginCheck).
+                              flatMapLatest(validateAjax);
+    var loginMessages = login.map(validateLogin).merge(availMessages);
 
-    var buttonEnabled = loginOk.and(fullnameOk).and(loginAvailable);
-    var loginError = loginOk.zipWith(availabilityError,
-                                     function (ok, error) { return ok ? "" : error })
+    var fullnameMessages = fullname.map(validateFullname);
 
+    var buttonEnabled = loginMessages.map(isGood).and(fullnameMessages.map(isGood));
 
     // Side effects part
     var setAttribute = function(element, attribute) {
@@ -90,8 +116,9 @@
       return function(value) { $(element).text(value) }
     }
 
+    loginMessages.onValue(setText($("#login .help-block")));
+    fullnameMessages.onValue(setText($("#fullname .help-block")));
     buttonEnabled.not().onValue(setAttribute($("#submit"), "disabled"));
-    loginError.onValue(setText($("#login .help-block")));
   </script>
 </body>
 </html>
