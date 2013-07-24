@@ -290,7 +290,7 @@ useful.
         @withStateMachine undefined, (prev, event) ->
           if event.filter(-> false)
             [prev, [event]]
-          else if prev == undefined or not isEqual(prev, event.value)
+          else if not (prev? and isEqual(prev, event.value))
             [event.value, [event]]
           else
             [prev, []]
@@ -639,11 +639,8 @@ There are a lot of trivial handy functions we've used above so here they are:
 
 We now need to make our objects usable outside.
 
-    Jnoid.EventStream = EventStream
-    Jnoid.Event = Event
-    Jnoid.Value = Value
-    Jnoid.Error = Error
-    Jnoid.End = End
+    for name, value of {EventStream, Event, Value, Error, End}
+      Jnoid[name] = value
 
     if define?.amd
       define [], -> Jnoid
