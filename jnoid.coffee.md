@@ -234,14 +234,6 @@ transform function.
           else
             @push event
 
-Another handy function is transit a stream to a stopper. On any event it'll
-just stop.
-
-      toStopper: ->
-        @withHandler (event) ->
-          @push new End
-          Jnoid.noMore
-
 As a slightly more fun stuff, here's `takeWhile`. It takes values from stream
 while assering their values with a given function remains true.
 
@@ -459,6 +451,10 @@ Now let's go and define boolean algebra over our streams:
 Feel the power? Let's do a complex stuff. Combine two streams so that we pop
 the first stream until we have a value on the second stream.
 
+      toStopper: ->
+        @withHandler (event) ->
+          @push new End
+          Jnoid.noMore
       prepend: (x)-> EventStream.unit(x).merge(@)
       takeUntil: (stopper) ->
         EventStream.zipWithAndStop [@, stopper.toStopper().prepend(1)], left
