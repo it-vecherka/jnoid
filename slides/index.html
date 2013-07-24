@@ -16,23 +16,23 @@
   <div id="slides">
     <!-- Здрасьте. -->
     <div class="slide">
-      <h1>Здрасьте.</h1>
+      <h1>Здрасьте</h1>
     </div>
 
     <div class="slide">
-      <h1>Джаваскрипт освобожденный.</h1>
+      <h1>Джаваскрипт освобожденный</h1>
     </div>
 
     <!-- Почему плох джиквери. -->
     <div class="slide">
-      <h1>Почему не хватает джиквери.</h1>
+      <h1>Почему не хватает джиквери</h1>
     </div>
 
     <div class="slide">
       <textarea>
         <div id="slides">
             <div class="slide">
-                <h1>Hello, world.</h1>
+                <h1>Hello, world</h1>
             </div>
         </div>
       </textarea>
@@ -40,7 +40,7 @@
 
     <!-- Почему плох бэкбон. -->
     <div class="slide">
-      <h1>Почему не хватает бэкбона.</h1>
+      <h1>Почему не хватает бэкбона</h1>
     </div>
 
     <div class="slide">
@@ -65,14 +65,199 @@
       <h1>Не нужно придумывать велосипед!</h1>
     </div>
 
-    <!-- <h1>Стрим.</h1> -->
+    <!-- <h1>Поток.</h1> -->
     <div class="slide">
-      <h1>Стрим.</h1>
+      <pre><code>
+        $("#login").on("click", function (event) {
+          value = $(event.target).val();
+          if (value.length > 0) {
+            $("#notice").text();
+          }
+        });
+      </code></pre>
+    </div>
+
+    <div class="slide">
+      <pre><code>
+        var clickStream = $("#login").stream("click");
+        clickStream.onValue(function (event) {
+          value = $(event.target).val();
+          if (value.length > 0) {
+            $("#notice").text();
+          }
+        });
+      </code></pre>
+    </div>
+
+    <div class="slide">
+      <pre><code>
+        var clickStream = $("#login").stream("click");
+        var valueStream = clickStream.map(function (event) {
+          return $(event.target).val();
+        });
+        var nonEmptyValueStream = valueStream.filter(function (value) {
+          return value.length > 0;
+        });
+        nonEmptyValueStream.onValue(function (value) {
+          $("#notice").text(value);
+        });
+      </code></pre>
+    </div>
+
+    <!-- <h1>API.</h1> -->
+
+    <div class="slide">
+      <h1>Пофантазируем</h1>
+    </div>
+
+    <div class="slide">
+      <h1>Конструкторы</h1>
+    </div>
+
+    <div class="slide">
+      <pre><code>
+        Jnoid.unit() # empty stream
+        Jnoid.unit(10) # stream with immediate value of 10
+      </code></pre>
+    </div>
+
+    <div class="slide">
+      <pre><code>
+        Jnoid.error(10) # stream with immediate error of 10
+      </code></pre>
+    </div>
+
+    <div class="slide">
+      <pre><code>
+        Jnoid.fromPromise($.ajax(params))
+      </code></pre>
+    </div>
+
+    <div class="slide">
+      <pre><code>
+        $("#input").stream("keyup")
+      </code></pre>
+    </div>
+
+    <div class="slide">
+      <h1>Преобразования</h1>
+    </div>
+
+    <div class="slide">
+      <pre><code>
+        priceValue.map((x)-> x > 0)
+      </code></pre>
+    </div>
+
+    <div class="slide">
+      <pre><code>
+        priceValue.filter((x)-> x > 0)
+      </code></pre>
+    </div>
+
+    <div class="slide">
+      <pre><code>
+        voteClick.take(10)
+      </code></pre>
+    </div>
+
+    <div class="slide">
+      <pre><code>
+        healthPoints.takeWhile((hp)-> hp > 0)
+      </code></pre>
+    </div>
+
+    <div class="slide">
+      <pre><code>
+        username.skipDuplicates()
+      </code></pre>
+    </div>
+
+    <div class="slide">
+      <pre><code>
+        ajaxResponse.recover((e)-> e.responseText)
+      </code></pre>
+    </div>
+
+    <div class="slide">
+      <h1>Комбинаторы</h1>
+    </div>
+
+    <div class="slide">
+      <pre><code>
+        plusClicks.map(-> 1).merge(minusClicks.map(-> -1))
+      </code></pre>
+    </div>
+
+    <div class="slide">
+      <pre><code>
+        usernameOk = username.map((x)-> x.length > 0)
+        username.zip(usernameOk)
+      </code></pre>
+    </div>
+
+    <div class="slide">
+      <pre><code>
+        password.zipWith(passwordConfirmation, (l, r)-> l == r)
+      </code></pre>
+    </div>
+
+    <div class="slide">
+      <pre><code>
+        usernameOk.and(passwordOk)
+        drivingLicensePresent.or(hasCar.not())
+      </code></pre>
+    </div>
+
+    <div class="slide">
+      <pre><code>
+        ajaxInProcess.takeUntil(ajaxResponse)
+      </code></pre>
+    </div>
+
+    <div class="slide">
+      <pre><code>
+        username.debounce(500)
+      </code></pre>
+    </div>
+
+    <div class="slide">
+      <h1>Хардкор</h1>
+    </div>
+
+    <div class="slide">
+      <h1>flatMap</h1>
+    </div>
+
+    <div class="slide">
+      <pre><code>
+        users.flat_map { |u| u.comments }
+      </code></pre>
+    </div>
+
+
+    <div class="slide">
+      <pre><code>
+        listenTo.flatMap ([source, object])->
+          if source == "dom"
+            Jnoid.fromDOM($(object), "click")
+          else if source == "ajax"
+            Jnoid.fromPromise($.ajax(object))
+          else
+            Jnoid.unit()
+      </code></pre>
+    </div>
+
+    <div class="slide">
+      <pre><code>
+        requests = usernames.map((u)-> "/check-username/" + u)
+        requests.flatMapLatest($.ajax)
+      </code></pre>
     </div>
 
     <!-- <h1>Пример.</h1> -->
     <div class="slide">
-      <h1>Пример.</h1>
+      <h1>Пример</h1>
     </div>
 
     <!-- <h1>Стало проще?</h1> -->
