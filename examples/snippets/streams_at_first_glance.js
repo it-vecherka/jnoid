@@ -1,7 +1,8 @@
+// # Streams
+//
 // The whole idea of event steams in three paragraphs.
 //
-// 1. We usually do:
-
+// 1) We usually do:
 $("#login").on("click", function (event) {
   value = $(event.target).val();
   if (value.length > 0) {
@@ -9,8 +10,7 @@ $("#login").on("click", function (event) {
   }
 });
 
-// 2. Let's do a proxy:
-
+// 2) Let's do a proxy:
 var clickStream = $("#login").stream("click");
 clickStream.onValue(function (event) {
   value = $(event.target).val();
@@ -19,10 +19,9 @@ clickStream.onValue(function (event) {
   }
 });
 
-// 3. Looks like we haven't got anything new.
+// 3) Looks like we haven't got anything new.
 // But now when we have the stream abstraction,
 // we can:
-
 var clickStream = $("#login").stream("click");
 var valueStream = clickStream.map(function (event) {
   return $(event.target).val();
