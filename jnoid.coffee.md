@@ -19,7 +19,10 @@ We represent event values as instances of `Maybe` monad. To know about it more,
 see section Maybe below. `None` in this case will be thought as the "End of
 stream".
 
-Class `EventStream` will be determined via a `subscribe` function.
+Class `EventStream` will be determined via a `subscribe`
+function. This function should receive a subscriber or sink
+function as an argument and call it whenever event exists.
+This enables push semantics for `EventStream`.
 
     class EventStream
 
