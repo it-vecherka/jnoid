@@ -21,8 +21,8 @@ Class `Signal` will be determined via a `subscribe function`.
 
     class Signal
 
-Boring stuff
-------------
+Helpers
+-------
 
 ### Maybe
 
@@ -49,7 +49,8 @@ We represent signal values as instances of `Maybe` monad.
 
     None = new NoneClass
 
-### Exports
+Exports
+-------
 
 We now need to make our objects usable outside:
 
