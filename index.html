@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+  <title>Jnoid</title>
+  <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+  <link rel="stylesheet" media="all" href="public/stylesheets/normalize.css" />
+  <link rel="stylesheet" media="all" href="docco.css" />
+</head>
+<body>
+  <div class="container">
+    <div class="page">
+
+      <div class="header">
+        
+          
+          <h1>Jnoid</h1>
+
+        
+      </div>
+
+      
+        
+        <h2>Synopsis</h2>
+
+        
+      
+        
+        <p>This source file itself is a <a href="http://en.wikipedia.org/wiki/Functional_reactive_programming">functional reactive
+programming</a>
+library for web clients or nodejs applications. Most of it&#39;s concepts are
+borrowed from <a href="https://github.com/raimohanska/bacon.js">Bacon.js</a>, but the
+purpose is to give an insight on FRP paradigm and explain the approach in the
+very code. This is why the code is written in <a href="http://en.wikipedia.org/wiki/Literate_programming">literate
+programming</a> style.</p>
+<p>There are however another reasons for this library to exist. It&#39;s small,
+simple, offers just one concept and aims to be fully usable nontheless.</p>
+<h2>The problem</h2>
+
+        
+      
+        
+        <p>The concept of the web has been changed and we now have to write rich,
+featureful client-side interfaces. There are some binding frameworks for that
+like Knockout or Backbone, and of cource they help a lot. However, their
+abstractions have two problems in common:</p>
+<ul>
+<li>They are too implicit. Lots of things are done with bindings somewhere
+outside.</li>
+<li>The abstractions they suggest are very poorly composable and tend to lead us
+to the code repetition.</li>
+</ul>
+<p>Instead we suggest Functional Reactive Programming.</p>
+<p>The general idea is to have the abstraction for a <em>signal</em> that we can observe
+and compose, so that we can constuct complex signals for the basic ones and
+then bind the side-effect code that manipulates DOM to the events.</p>
+<p>All our application logic should be in pure functions and only a ui related
+code will be in IO functions. Complex stuff should be handled with this library
+and isolated from pure logic.</p>
+<h2>All right, what do we do?</h2>
+
+        
+      
+        
+        <p>Let think of the primitives. The core will be <code>EventStream</code> abstraction
+- a representation of the continous discrete events line. We&#39;re going then to
+write some compositions for the streams and some ways to construct the streams
+from various sources.</p>
+<p>So at step zero we define the object we export. Let&#39;s call our library &quot;Jnoid&quot;.</p>
+
+        
+          <div class='highlight'><pre>Jnoid = {}</pre></div>
+        
+      
+        
+        <h2>Events</h2>
+
+        
+      
+        
+        <p>At first we define the event wrapper we&#39;re going to use. Pretty straigtforward.</p>
+
+        
+          <div class='highlight'><pre><span class="class"><span class="keyword">class</span> <span class="title">Event</span></span>
+  isEnd: -&gt; <span class="literal">false</span>
+  isValue: -&gt; <span class="literal">false</span>
+  isError: -&gt; <span class="literal">false</span>
+  filter: -&gt; <span class="literal">true</span>
+  fmap: -&gt; @</pre></div>
+        
+      
+        
+        <p>That was the base class, now we define the classes we&#39;re actually going to use.
+<code>Value</code> class is going to represent the most usual event we&#39;ll send.</p>
+
+        
+          <div class='highlight'><pre><span class="class"><span class="keyword">class</span> <span class="title">Value</span> <span class="keyword">extends</span> <span class="title">Event</span></span>
+  constructor: (<span class="property">@value</span>) -&gt;
+  isValue: -&gt; <span class="literal">true</span>
+  describe: -&gt; <span class="property">@value</span>
+  inspect: -&gt; <span class="string">"Event.Value&lt;<span class="subst">#{@value}</span>&gt;"</span></pre></div>
+        
+      
+        
+        <p>This class is going to be used like a functor so we define a couple of helper
+functions in it.</p>
+
+        
+          <div class='highlight'><pre>  filter: (f)-&gt; f <span class="property">@value</span>
+  fmap: (f)-&gt; <span class="keyword">new</span> Value f <span class="property">@value</span></pre></div>
+        
+      
+        
+        <p><code>Error</code> class is going to represent an important case where in some stream an
+error pops out. This will have to be correctly composed in our combinators.</p>
+
+        
+          <div class='highlight'><pre><span class="class"><span class="keyword">class</span> <span class="title">Error</span> <span class="keyword">extends</span> <span class="title">Event</span></span>
+  constructor: (<span class="property">@error</span>) -&gt;
+  isError: -&gt; <span class="literal">true</span>
+  describe: -&gt; <span class="string">"&lt;error&gt; <span class="subst">#{@error}</span>"</span>
+  inspect: -&gt; <span class="string">"Event.Error&lt;<span class="subst">#{@error}</span>&gt;"</span></pre></div>
+        
+      
+        
+        <p><code>End</code> is a special case for the stream end. We could define it as a singleton,
+but let&#39;s be simple for a while for the stream end.</p>
+
+        
+          <div class='highlight'><pre><span class="class"><span class="keyword">class</span> <span class="title">End</span> <span class="keyword">extends</span> <span class="title">Event</span></span>
+  constructor: -&gt;
+  isEnd: -&gt; <span class="literal">true</span>
+  test: -&gt; <span class="literal">true</span>
+  describe: -&gt; <span class="string">'&lt;end&gt;'</span>
+  inspect: -&gt; <span class="string">"Event.End"</span></pre></div>
+        
+      
+        
+        <p>A handy function can be:</p>
+
+        
+          <div class='highlight'><pre><span class="function"><span class="title">toEvent</span></span> = (x) -&gt; <span class="keyword">if</span> x <span class="keyword">instanceof</span> Event <span class="keyword">then</span> x <span class="keyword">else</span> <span class="keyword">new</span> Value x</pre></div>
+        
+      
+        
+        <p>Now let&#39;s think about the <code>EventStream</code> class. How it&#39;s going to be
+represented?</p>
+<h2>EventStream</h2>
+
+        
+      
+        
+        <p>The core behaviour of the <code>EventStream</code> we define with a function we call
+<code>unfold</code> which is provided to the constructor. This <code>unfold</code> function itself is
+a function that accepts a function, <code>subscriber</code>, that will receive Events.
+<code>unfold</code> will get the events and pass it to the <code>subscriber</code> function.</p>
+<p>Let think in advance of termination. Let the <code>unfold</code> function to return a
+function (it&#39;s FP, dude!) that, when called, will do the unsubscribing, which
+will release all the resources captured.</p>
+<p>An altertative way will be that if a <code>subscriber</code>, and that&#39;s the only function
+we&#39;ve yet discussed that will be written in application code, to return some
+special value, and if it does, we will also do the unsubscribe. By the way, we
+need to define these special value. Let&#39;s be simple:</p>
+
+        
+          <div class='highlight'><pre>Jnoid.more = <span class="string">"&lt;more&gt;"</span>
+Jnoid.noMore = <span class="string">"&lt;no more&gt;"</span></pre></div>
+        
+      
+        
+        <p>Let&#39;s also at once define a poller that asserts if we&#39;re given
+<code>Jnoid.noMore</code>: </p>
+
+        
+          <div class='highlight'><pre><span class="function"><span class="title">tapUnsub</span></span> = (reply, unsub)-&gt;
+  unsub() <span class="keyword">if</span> reply == Jnoid.noMore
+  reply</pre></div>
+        
+      
+        
+        <p>We could define it via K-combinator, but it would be even
+more code.</p>
+<p>Now finally:</p>
+
+        
+          <div class='highlight'><pre><span class="class"><span class="keyword">class</span> <span class="title">EventStream</span></span>
+  constructor: (unfold) -&gt;
+    <span class="property">@unfold</span> = <span class="keyword">new</span> Dispatcher(unfold).unfold</pre></div>
+        
+      
+        
+        <p>If <code>unfold</code> scares someone, for the outer application code it may be thought as
+<code>subscribe</code>.</p>
+
+        
+          <div class='highlight'><pre>    <span class="property">@subscribe</span> = <span class="property">@unfold</span></pre></div>
+        
+      
+        
+        <h3>What&#39;s that dispatcher?</h3>
+<p>An abstraction that is complex and dirty. It&#39;ll store all of the subscribers and
+propagate the evens popped from <code>unfold</code> we passed to it to all of them. It&#39;ll
+also maintain the unsubscribe logic. We&#39;re going to define it later.</p>
+<h2>Trivial constructors</h2>
+
+        
+      
+        
+        <p>Let&#39;s say we want to send just a list of events. What do we do?</p>
+
+        
+          <div class='highlight'><pre>  <span class="property">@fromList</span> = (list)-&gt;
+    <span class="keyword">new</span> EventStream (sink)-&gt;
+      sink (toEvent value) <span class="keyword">for</span> value <span class="keyword">in</span> list
+      sink (<span class="keyword">new</span> End)
+      nop</pre></div>
+        
+      
+        
+        <p><code>nop</code> is a function that does nothing. We&#39;ll define this obvious helper
+functions later.</p>
+<p>Now let&#39;s define the varargs version of <code>EventStream.fromList</code>.</p>
+
+        
+          <div class='highlight'><pre>  <span class="property">@unit</span> = (args...)-&gt; <span class="property">@fromList</span>(args)</pre></div>
+        
+      
+        
+        <p>An interesting thing about <code>EventStream.unit</code> is that if it&#39;s called with one
+(or no) arguments, it conforms with a
+<a href="http://en.wikipedia.org/wiki/Monad_(functional_programming">monadic</a> concept
+of unit. If we later define bind, and they will conform monadic laws,
+<code>EventStream</code> will become a monad. It&#39;s FP, dude!</p>
+<h3>Logging</h3>
+<p>This trivial <code>EventStream</code> function will help us a lot:</p>
+
+        
+          <div class='highlight'><pre>  log: (args...) -&gt;
+    <span class="property">@subscribe</span> (event) -&gt; console?.log?(args..., event.describe())
+    <span class="keyword">this</span></pre></div>
+        
+      
+        
+        <h2>Accessing</h2>
+
+        
+      
+        
+        <p><code>unfold</code>/<code>subscribe</code> are nesessary but raw, as they pass the event class, not
+it&#39;s value. Let&#39;s define more convenient access to the stream.</p>
+
+        
+          <div class='highlight'><pre>  onValue: (f) -&gt;
+    <span class="property">@subscribe</span> (event) -&gt; <span class="keyword">if</span> event.isValue() <span class="keyword">then</span> f(event.value) <span class="keyword">else</span> Jnoid.more
+
+  onError: (f) -&gt;
+    <span class="property">@subscribe</span> (event) -&gt; <span class="keyword">if</span> event.isError() <span class="keyword">then</span> f(event.error) <span class="keyword">else</span> Jnoid.more</pre></div>
+        
+      
+        
+        <h2>Transformers</h2>
+
+        
+      
+        
+        <p>Let&#39;s give a way to transform the output. The most basic combinators are
+<code>map</code> and <code>filter</code>.  Combinator <code>map</code> transforms the values of events,
+while <code>filter</code> filters the events based on their values.</p>
+<p>Recall how we carefully declared <code>fmap</code> and <code>filter</code> in <code>Event</code> class. This way
+our <code>map</code> and <code>filter</code> will only touch values and leave errors and end at they
+are.</p>
+
+        
+          <div class='highlight'><pre>  withHandler: (handler) -&gt;
+    dispatcher = <span class="keyword">new</span> Dispatcher(<span class="property">@unfold</span>, handler)
+    <span class="keyword">new</span> EventStream(dispatcher.unfold)
+
+  map: (f) -&gt;
+    <span class="property">@withHandler</span> (event) -&gt; <span class="property">@push</span> event.fmap(f)
+
+  filter: (f) -&gt;
+    <span class="property">@withHandler</span> (event) -&gt; <span class="keyword">if</span> event.filter(f) <span class="keyword">then</span> <span class="property">@push</span> event <span class="keyword">else</span> Jnoid.more</pre></div>
+        
+      
+        
+        <p>We can now receive only non-value events this way:</p>
+
+        
+          <div class='highlight'><pre>  errors: -&gt; <span class="property">@filter</span> -&gt; <span class="literal">false</span></pre></div>
+        
+      
+        
+        <p>To have values, however, we&#39;ll have to define a custom function:</p>
+
+        
+          <div class='highlight'><pre>  values: -&gt;
+    <span class="property">@withHandler</span> (event) -&gt; <span class="keyword">unless</span> event.isError() <span class="keyword">then</span> <span class="property">@push</span> event <span class="keyword">else</span> Jnoid.more</pre></div>
+        
+      
+        
+        <p>Let&#39;s also declare <code>recover</code> that will map errors into values using
+transform function.</p>
+
+        
+          <div class='highlight'><pre>  recover: (f)-&gt;
+    <span class="property">@withHandler</span> (event) -&gt;
+      <span class="keyword">if</span> event.isError()
+        <span class="property">@push</span> <span class="keyword">new</span> Value f event.error
+      <span class="keyword">else</span>
+        <span class="property">@push</span> event</pre></div>
+        
+      
+        
+        <p>As a slightly more fun stuff, here&#39;s <code>takeWhile</code>. It takes values from stream
+while assering their values with a given function remains true.</p>
+
+        
+          <div class='highlight'><pre>  takeWhile: (f) -&gt;
+    <span class="property">@withHandler</span> (event) -&gt;
+      <span class="keyword">if</span> event.filter(f)
+        <span class="property">@push</span> event
+      <span class="keyword">else</span>
+        <span class="property">@push</span> <span class="keyword">new</span> End
+        Jnoid.noMore</pre></div>
+        
+      
+        
+        <p>We may also want <code>take</code> that just takes <code>n</code> events from stream.</p>
+
+        
+          <div class='highlight'><pre>  take: (count) -&gt;
+    <span class="keyword">return</span> Jnoid.unit() <span class="keyword">if</span> count &lt;= <span class="number">0</span>
+    <span class="property">@withHandler</span> (event) -&gt;
+      <span class="keyword">if</span> event.filter(-&gt; <span class="literal">false</span>)
+        <span class="property">@push</span> event
+      <span class="keyword">else</span>
+        count--
+        <span class="keyword">if</span> count &gt; <span class="number">0</span>
+          <span class="property">@push</span> event
+        <span class="keyword">else</span>
+          <span class="property">@push</span> event <span class="keyword">if</span> count == <span class="number">0</span>
+          <span class="property">@push</span> <span class="keyword">new</span> End
+          Jnoid.noMore</pre></div>
+        
+      
+        
+        <p>We can even do fancier stuff. Let&#39;s define <code>withStateMachine</code> that
+remembers previous value and can take decisions based on it:</p>
+
+        
+          <div class='highlight'><pre>  withStateMachine: (initState, f) -&gt;
+    state = initState
+    <span class="property">@withHandler</span> (event) -&gt;
+      [newState, outputs] = f(state, event)
+      state = newState
+      reply = Jnoid.more
+      <span class="keyword">for</span> output <span class="keyword">in</span> outputs
+        reply = <span class="property">@push</span> output
+        <span class="keyword">return</span> reply <span class="keyword">if</span> reply == Jnoid.noMore
+      reply</pre></div>
+        
+      
+        
+        <p>With this for example we can have <code>skipDuplicates</code> which is extremely
+useful.</p>
+
+        
+          <div class='highlight'><pre>  skipDuplicates: (<span class="function"><span class="title">isEqual</span></span> = (a, b) -&gt; a <span class="keyword">is</span> b) -&gt;
+    <span class="property">@withStateMachine</span> <span class="literal">undefined</span>, (prev, event) -&gt;
+      <span class="keyword">if</span> event.filter(-&gt; <span class="literal">false</span>)
+        [prev, [event]]
+      <span class="keyword">else</span> <span class="keyword">if</span> <span class="keyword">not</span> (prev? <span class="keyword">and</span> isEqual(prev, event.value))
+        [event.value, [event]]
+      <span class="keyword">else</span>
+        [prev, []]</pre></div>
+        
+      
+        
+        <h2>flatMap</h2>
+
+        
+      
+        
+        <p>It&#39;s time to become more powerful. In functional programming, <code>map</code> is not the
+basic combinator. The basic is a really powerful <code>flatMap</code>. Let&#39;s think what
+it&#39;s going to do in our case.</p>
+<p><code>map</code> receives a function that transforms event value to another value. A more
+general approach is that we take each value in a stream and start a stream with
+it. So the function we pass there will create a new stream based on a value.
+Afterwards we join all the streams collecting values from all of them.</p>
+<p>It&#39;s going to be a complex stuff. It has to listen to the source stream and
+spawn the streams, joining their unfolds. It&#39;ll also have to terminate
+properly. The &#39;and&#39; conditions of termination of the resulting stream is:</p>
+<ul>
+<li>Source has ended.</li>
+<li>All of the children have ended.</li>
+</ul>
+<p>It&#39;s going to be huge and not so pretty. Don&#39;t worry about it. We&#39;ll do
+such things only one more time.</p>
+
+        
+          <div class='highlight'><pre>  flatMap: (f) -&gt;
+    root = <span class="keyword">this</span>
+    <span class="keyword">new</span> EventStream (sink) -&gt;
+      children = []
+      rootEnd = <span class="literal">false</span>
+      <span class="function"><span class="title">unsubRoot</span></span> = -&gt;
+      <span class="function"><span class="title">unbind</span></span> = -&gt;
+        unsubRoot()
+        unsubChild() <span class="keyword">for</span> unsubChild <span class="keyword">in</span> children
+        children = []
+      <span class="function"><span class="title">checkEnd</span></span> = -&gt;
+        <span class="keyword">if</span> rootEnd <span class="keyword">and</span> (children.length == <span class="number">0</span>)
+          sink <span class="keyword">new</span> End
+      <span class="function"><span class="title">spawner</span></span> = (event) -&gt;
+        <span class="keyword">if</span> event.isEnd()
+          rootEnd = <span class="literal">true</span>
+          checkEnd()
+        <span class="keyword">else</span> <span class="keyword">if</span> event.isError()
+          sink event
+        <span class="keyword">else</span>
+          child = f event.value
+          unsubChild = <span class="literal">undefined</span>
+          childEnded = <span class="literal">false</span>
+          <span class="function"><span class="title">removeChild</span></span> = -&gt;
+            remove(unsubChild, children) <span class="keyword">if</span> unsubChild?
+            checkEnd()
+          <span class="function"><span class="title">handler</span></span> = (event) -&gt;
+            <span class="keyword">if</span> event.isEnd()
+              removeChild()
+              childEnded = <span class="literal">true</span>
+              Jnoid.noMore
+            <span class="keyword">else</span>
+              tapUnsub sink(event), unbind
+          unsubChild = child.unfold handler
+          children.push unsubChild <span class="keyword">if</span> <span class="keyword">not</span> childEnded
+      unsubRoot = root.unfold(spawner)
+      unbind</pre></div>
+        
+      
+        
+        <p>By the way, this was the most tricky part to make EventStream kind of a monad
+(controversial as always). In a Haskell world this function is usually called
+<code>bind</code>, let&#39;s make an alias:</p>
+
+        
+          <div class='highlight'><pre>  bind: (args...)-&gt; <span class="property">@flatMap</span>(args...)</pre></div>
+        
+      
+        
+        <p>This combinator gives us lots of power. Imagine at first place that we want
+to merge streams. It&#39;s unbelievably simple ( <code>id</code> is a function that
+returns it&#39;s first argument).</p>
+
+        
+          <div class='highlight'><pre>  merge: (others...)-&gt; EventStream.fromList([@, others...]).join()
+  join: -&gt; <span class="property">@flatMap</span>(id)</pre></div>
+        
+      
+        
+        <p>Join transforms stream of streams into just a stream, so another common
+name for it is flatten.</p>
+
+        
+          <div class='highlight'><pre>  flatten: -&gt; <span class="property">@join</span>()</pre></div>
+        
+      
+        
+        <p>Another example is that we can easily implement a delay.</p>
+
+        
+          <div class='highlight'><pre>  delay: (delay)-&gt; <span class="property">@flatMap</span> (x)-&gt; Jnoid.later(delay, x)</pre></div>
+        
+      
+        
+        <p>We know we haven&#39;t defined <code>Jnoid.later</code> yet with all similar fancy
+constructors, but it&#39;s obvious - something that takes a value and returns a
+stream that pops this value in a given amount of time, then ends.</p>
+<p>For fun, note that we could define <code>map</code> as:</p>
+
+        
+          <div class='highlight'><pre>  collect: (f)-&gt; <span class="property">@flatMap</span> (x)-&gt; EventStream.unit(f(x))</pre></div>
+        
+      
+        
+        <h2>Zip</h2>
+
+        
+      
+        
+        <p>But that&#39;s not all the power we need. We also need to zip streams. Zipping is
+turning a list of streams to a stream that on value in any of them sends the
+tuple of all their latest values. It can terminate when all the streams ended
+or when any of the streams ended - those&#39;ll serve different purposes.</p>
+<p>Again as with the <code>flatMap</code> it&#39;ll be fat, ugly and operate mutable state.
+But you don&#39;t have to worry about it as long as your code will be pure.</p>
+<p>These functions do not have the main stream so we define them as class
+functions:</p>
+
+        
+          <div class='highlight'><pre>  <span class="property">@zip</span>: (streams, endChecker = all) -&gt;
+    <span class="keyword">if</span> streams.length
+      values = (<span class="literal">undefined</span> <span class="keyword">for</span> s <span class="keyword">in</span> streams)
+      <span class="keyword">new</span> EventStream (sink) =&gt;
+        unsubscribed = <span class="literal">false</span>
+        unsubs = (nop <span class="keyword">for</span> s <span class="keyword">in</span> streams)
+        unsubAll = (-&gt; f() <span class="keyword">for</span> f <span class="keyword">in</span> unsubs ; unsubscribed = <span class="literal">true</span>)
+        ends = (<span class="literal">false</span> <span class="keyword">for</span> s <span class="keyword">in</span> streams)
+        <span class="function"><span class="title">checkEnd</span></span> = -&gt;
+          <span class="keyword">if</span> endChecker(ends)
+            tapUnsub sink(<span class="keyword">new</span> End()), unsubAll
+        <span class="function"><span class="title">combiningSink</span></span> = (markEnd, setValue) -&gt;
+          (event) -&gt;
+            <span class="keyword">if</span> (event.isEnd())
+              markEnd()
+              checkEnd()
+              Jnoid.noMore
+            <span class="keyword">else</span> <span class="keyword">if</span> event.isError()
+              tapUnsub sink(event), unsubAll
+            <span class="keyword">else</span>
+              setValue(event.value)
+              <span class="keyword">if</span> all(values, (x) -&gt; x != <span class="literal">undefined</span>)
+                tapUnsub sink(toEvent map(id, values)), unsubAll
+              <span class="keyword">else</span>
+                Jnoid.more
+        <span class="function"><span class="title">sinkFor</span></span> = (index) -&gt;
+          combiningSink(
+            (-&gt; ends[index] = <span class="literal">true</span>)
+            ((x) -&gt; values[index] = x)
+          )
+        <span class="keyword">for</span> stream, index <span class="keyword">in</span> streams
+          unsubs[index] = stream.unfold (sinkFor index) <span class="keyword">unless</span> unsubscribed
+        unsubAll
+    <span class="keyword">else</span>
+      EventStream.unit([])
+
+  <span class="property">@zipAndStop</span>: (streams)-&gt; <span class="property">@zip</span>(streams, any)</pre></div>
+        
+      
+        
+        <p>The combinators we&#39;ve just done are unbelievably useful. Let&#39;s first expand
+them to <code>zipWith</code> and <code>zipWithAndStop</code> to see it.</p>
+
+        
+          <div class='highlight'><pre>  <span class="property">@zipWith</span>: (streams, f)-&gt; <span class="property">@zip</span>(streams).map(uncurry(f))
+  <span class="property">@zipWithAndStop</span>: (streams, f)-&gt; <span class="property">@zipAndStop</span>(streams).map(uncurry(f))</pre></div>
+        
+      
+        
+        <p>Let&#39;s proxy this useful stuff to instance methods:</p>
+
+        
+          <div class='highlight'><pre>  zip: (others...)-&gt; EventStream.zip [@, others...]
+  zipWith: (others..., f)-&gt; EventStream.zipWith [@, others...], f
+  zipAndStop: (others...)-&gt; EventStream.zipAndStop [@, others...]
+  zipWithAndStop: (others..., f)-&gt; EventStream.zipWithAndStop [@, others...], f</pre></div>
+        
+      
+        
+        <p>Now let&#39;s go and define boolean algebra over our streams:</p>
+
+        
+          <div class='highlight'><pre>  <span class="keyword">and</span>: (others...)-&gt; EventStream.zipWith [@, others...], (a, b)-&gt; a &amp;&amp; b
+  <span class="keyword">or</span>: (others...)-&gt; EventStream.zipWith [@, others...], (a, b)-&gt; a || b
+  <span class="keyword">not</span>: -&gt; <span class="property">@map</span> (x)-&gt; !x</pre></div>
+        
+      
+        
+        <p>Feel the power? Let&#39;s do a complex stuff. Combine two streams so that we pop
+the first stream until we have a value on the second stream.</p>
+
+        
+          <div class='highlight'><pre>  toStopper: -&gt;
+    <span class="property">@withHandler</span> (event) -&gt;
+      <span class="property">@push</span> <span class="keyword">new</span> End
+      Jnoid.noMore
+  prepend: (x)-&gt; EventStream.unit(x).merge(@)
+  takeUntil: (stopper) -&gt;
+    EventStream.zipWithAndStop [@, stopper.toStopper().prepend(<span class="number">1</span>)], left</pre></div>
+        
+      
+        
+        <p>Having <code>takeUntil</code> we can do a sophisticated <code>flatMapLatest</code>. It&#39;ll create a
+steam that joins all the streams created with a spawner function, but in a
+different way. It&#39;ll take only the values from the latest stream spawned.</p>
+
+        
+          <div class='highlight'><pre>  flatMapLatest: (f) -&gt; <span class="property">@flatMap</span> (x) =&gt; f(x).takeUntil(@)</pre></div>
+        
+      
+        
+        <p>Let&#39;s combine it with <code>later</code> to implement a classic <code>debounce</code>:</p>
+
+        
+          <div class='highlight'><pre>  debounce: (delay) -&gt;
+    <span class="property">@flatMapLatest</span> (value) -&gt;
+      Jnoid.later delay, value</pre></div>
+        
+      
+        
+        <p>Take a break. Think of all the power we got. Now we want to create these
+streams from everything.</p>
+<h2>Constructors</h2>
+
+        
+      
+        
+        <p>Stop here and think about the basic pattern. New EventStream is defined via
+<code>unfold</code> function and we&#39;ve already negotiated about the rules about it. Let&#39;s
+attempt to formalize these rules so that we&#39;ll only have to specify the
+behaviour.</p>
+<p>Here binder is the stuff that is going to pop out events and transform is a
+handy way to handle them. Transform is allowed to return an array of events and
+all of them will be popped out to subscriber.</p>
+
+        
+          <div class='highlight'><pre>  <span class="property">@fromBinder</span>: (binder, transform = id) -&gt;
+    <span class="keyword">new</span> EventStream (sink) -&gt;
+      unbinder = binder (args...) -&gt;
+        events = toArray transform args...
+        <span class="keyword">for</span> e <span class="keyword">in</span> events
+          event = toEvent e
+          tap sink(event), (reply)-&gt;
+            unbinder() <span class="keyword">if</span> reply == Jnoid.noMore <span class="keyword">or</span> event.isEnd()</pre></div>
+        
+      
+        
+        <p>We&#39;re going to expose <code>Jnoid</code> variable so the complex way of constructing
+streams we&#39;ll place there. Let&#39;s first proxy the basics.</p>
+
+        
+          <div class='highlight'><pre>Jnoid.unit = EventStream.unit
+Jnoid.fromList = EventStream.fromList
+Jnoid.fromBinder = EventStream.fromBinder</pre></div>
+        
+      
+        
+        <p>By the way, let&#39;s also copy our useful combinators.</p>
+
+        
+          <div class='highlight'><pre>Jnoid.zip = EventStream.zip
+Jnoid.zipWith = EventStream.zipWith
+Jnoid.zipAndStop = EventStream.zipAndStop
+Jnoid.zipWithAndStop = EventStream.zipWithAndStop</pre></div>
+        
+      
+        
+        <p>Let&#39;s use our binder to get aquainted. We want to create a stream that will
+poll some io function with a given interval. To recall, we should return a
+function that will release the resources, so we return <code>clearInterval</code>.</p>
+
+        
+          <div class='highlight'><pre>Jnoid.<span class="function"><span class="title">fromPoll</span></span> = (delay, poll) -&gt;
+  Jnoid.fromBinder (handler) -&gt;
+    i = setInterval(handler, delay)
+    -&gt; clearInterval(i)
+  , poll</pre></div>
+        
+      
+        
+        <p>With this we can easily define <code>Jnoid.later</code> we&#39;ve been using in delay.</p>
+
+        
+          <div class='highlight'><pre>Jnoid.<span class="function"><span class="title">sequentially</span></span> = (delay, list)-&gt;
+  index = <span class="number">0</span>
+  Jnoid.fromPoll delay,-&gt;
+    value = list[index++]
+    <span class="keyword">if</span> index &lt; list.length
+      value
+    <span class="keyword">else</span> <span class="keyword">if</span> index == list.length
+      [value, <span class="keyword">new</span> End]
+    <span class="keyword">else</span>
+      <span class="keyword">new</span> End
+
+Jnoid.<span class="function"><span class="title">later</span></span> = (delay, value)-&gt;
+  Jnoid.sequentially(delay, [value])</pre></div>
+        
+      
+        
+        <p>Let&#39;s also define a function that works on promises, e.g., ajax. The
+resource releasing here for ajax is <code>abort</code>. We should also handle promise
+errors here. In a transform function we attach end to our stream. As we
+hoped, transform helps us a lot.</p>
+
+        
+          <div class='highlight'><pre>Jnoid.<span class="function"><span class="title">fromPromise</span></span> = (promise) -&gt;
+  Jnoid.fromBinder (handler) -&gt;
+    promise.<span class="keyword">then</span> handler, (e) -&gt; handler <span class="keyword">new</span> Error e
+    -&gt; promise.abort?()
+  , (value) -&gt; [value, <span class="keyword">new</span> End]</pre></div>
+        
+      
+        
+        <p>Interesting that with <code>fromPromise</code> and things like <code>flatMap</code> we can do a
+sophisticated thing: <code>promises()</code> stream transformer. It&#39;ll turn a stream
+of some values into a stream of returned values from those promises. A
+good example of <code>promise</code> you can pass to that function is <code>jQuery.ajax</code>.</p>
+
+        
+          <div class='highlight'><pre>EventStream::<span class="function"><span class="title">promises</span></span> = (promise)-&gt;
+  <span class="property">@flatMapLatest</span> (params)-&gt; Jnoid.fromPromise promise params</pre></div>
+        
+      
+        
+        <p>Finally let&#39;s define the way to receive events from DOM objects. We&#39;ll do
+it assuming we&#39;re called in jQuery/Zepto fashion.</p>
+<p>We allow to override <code>transform</code> - by default it&#39;ll take the first
+argument, which is usually a jQuery event. We use <code>on</code> to subscribe and
+<code>off</code> to unsubscribe.</p>
+
+        
+          <div class='highlight'><pre>Jnoid.<span class="function"><span class="title">fromDOM</span></span> = (element, event, selector, transform) -&gt;
+  [eventTransformer, selector] = [selector, <span class="literal">null</span>] <span class="keyword">if</span> isFunction(selector)
+
+  Jnoid.fromBinder (handler) =&gt;
+    element.<span class="literal">on</span>(event, selector, handler)
+    =&gt; element.<span class="literal">off</span>(event, selector, handler)
+  , eventTransformer</pre></div>
+        
+      
+        
+        <h2>Dispatcher</h2>
+
+        
+      
+        
+        <p>All right, now let&#39;s write a dispatcher. We could use javascript events but
+let&#39;s do it manually. After all, there is not so much code in it.</p>
+<p>Yes, it stores mutable state, but it&#39;s not observable from code - it&#39;s just
+observable from the real world. We&#39;re good.</p>
+
+        
+          <div class='highlight'><pre><span class="class"><span class="keyword">class</span> <span class="title">Dispatcher</span></span>
+  constructor: (unfold, handleEvent) -&gt;
+    unfold ?= (event) -&gt;
+    sinks = []
+    <span class="property">@push</span> = (event) =&gt;
+      <span class="keyword">for</span> sink <span class="keyword">in</span> sinks
+        tapUnsub sink(event), -&gt; remove(sink, sinks)
+      <span class="keyword">if</span> (sinks.length &gt; <span class="number">0</span>) <span class="keyword">then</span> Jnoid.more <span class="keyword">else</span> Jnoid.noMore
+    handleEvent ?= (event) -&gt; <span class="property">@push</span> event
+    <span class="property">@handleEvent</span> = (event) =&gt; handleEvent.apply(<span class="keyword">this</span>, [event])
+    <span class="property">@unfold</span> = (sink) =&gt;
+      sinks.push(sink)
+      unsubSelf = unfold <span class="property">@handleEvent</span> <span class="keyword">if</span> sinks.length == <span class="number">1</span>
+      -&gt;
+        remove(sink, sinks)
+        unsubSelf?() <span class="keyword">unless</span> any sinks</pre></div>
+        
+      
+        
+        <h2>Boring stuff</h2>
+
+        
+      
+        
+        <h3>Handy functions</h3>
+<p>There are a lot of trivial handy functions we&#39;ve used above so here they are:</p>
+
+        
+          <div class='highlight'><pre><span class="function"><span class="title">nop</span></span> = -&gt;
+<span class="function"><span class="title">id</span></span> = (x)-&gt; x
+<span class="function"><span class="title">left</span></span> = (x, y)-&gt; x
+<span class="function"><span class="title">right</span></span> = (x, y)-&gt; y
+<span class="function"><span class="title">tap</span></span> = (x, f) -&gt;
+  f(x)
+  x
+<span class="function"><span class="title">empty</span></span> = (xs) -&gt; xs.length == <span class="number">0</span>
+<span class="function"><span class="title">head</span></span> = (xs) -&gt; xs[<span class="number">0</span>]
+<span class="function"><span class="title">tail</span></span> = (xs) -&gt; xs[<span class="number">1.</span>..xs.length]
+<span class="function"><span class="title">uncurry</span></span> = (f) -&gt; (args)-&gt; f(args...)
+<span class="function"><span class="title">map</span></span> = (f, xs) -&gt;
+    f(x) <span class="keyword">for</span> x <span class="keyword">in</span> xs
+<span class="function"><span class="title">all</span></span> = (xs, f = id) -&gt;
+  <span class="keyword">for</span> x <span class="keyword">in</span> xs
+    <span class="keyword">return</span> <span class="literal">false</span> <span class="keyword">if</span> <span class="keyword">not</span> f(x)
+  <span class="keyword">return</span> <span class="literal">true</span>
+<span class="function"><span class="title">any</span></span> = (xs, f = id) -&gt;
+  <span class="keyword">for</span> x <span class="keyword">in</span> xs
+    <span class="keyword">return</span> <span class="literal">true</span> <span class="keyword">if</span> f(x)
+  <span class="keyword">return</span> <span class="literal">false</span>
+<span class="function"><span class="title">remove</span></span> = (x, xs) -&gt;
+  i = xs.indexOf(x)
+  xs.splice(i, <span class="number">1</span>) <span class="keyword">if</span> i &gt;= <span class="number">0</span>
+<span class="function"><span class="title">isFunction</span></span> = (f) -&gt; <span class="keyword">typeof</span> f == <span class="string">"function"</span>
+<span class="function"><span class="title">toArray</span></span> = (x) -&gt; <span class="keyword">if</span> x <span class="keyword">instanceof</span> Array <span class="keyword">then</span> x <span class="keyword">else</span> [x]</pre></div>
+        
+      
+        
+        <h3>Exports</h3>
+<p>We now need to make our objects usable outside.</p>
+
+        
+          <div class='highlight'><pre><span class="keyword">for</span> name, value <span class="keyword">of</span> {EventStream, Event, Value, Error, End}
+  Jnoid[name] = value
+
+<span class="keyword">if</span> define?.amd
+  define [], -&gt; Jnoid
+<span class="keyword">else</span> <span class="keyword">if</span> module?.exports
+  module.exports = Jnoid
+<span class="keyword">else</span>
+  <span class="property">@Jnoid</span> = Jnoid</pre></div>
+        
+      
+        
+        <h2>Where to go now</h2>
+
+        
+      
+        
+        <p>This is a library that demonstrates lots of interesting things. First of all
+it&#39;s Functional Reactive Programming paradigm. Second is functional design at
+all. We encourage you to try to create your own combinators above to posess
+this power.</p>
+<p>You can also:</p>
+<ul>
+<li>Read about functional reactive programming on <a href="http://www.haskell.org/haskellwiki/Functional_Reactive_Programming">Haskell
+wiki</a></li>
+<li>Look at more production-ready <a href="https://github.com/raimohanska/bacon.js">Bacon.js</a></li>
+<li>Check the example problem in <code>examples/</code> folder. You can run the example via
+<code>npm run-script simple-example</code>. The very solution is in
+<a href="https://github.com/it-vecherka/jnoid/blob/master/examples/simple/public/index.html"><code>examples/simple/public/index.html</code></a></li>
+</ul>
+
+        
+      
+      <div class="fleur">h</div>
+    </div>
+  </div>
+</body>
+</html>
