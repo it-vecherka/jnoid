@@ -26,11 +26,15 @@
   <div id="slides">
     <!-- Здрасьте. -->
     <div class="slide">
-      <h1>Здрасьте</h1>
+      <img src="./i/hello.jpeg">
     </div>
 
     <div class="slide">
-      <h1>Джаваскрипт освобожденный</h1>
+      <img src="./i/poster.jpg">
+    </div>
+
+    <div class="slide">
+      <img src="./i/lamp.jpg">
     </div>
 
     <!-- Почему плох джиквери. -->
@@ -40,8 +44,38 @@
 
     <div class="slide">
       <pre><code class="javascript">
-        $("#input").maccaron();
+$("input#itemWeight").on("change", function() {
+  $.ajax({
+    url: $(this).data("update-url"),
+    data: {
+      weight: $(this).val()
+    },
+    success: function (data) {
+      $('#mySelect').html(data)
+    }
+  });
+});
       </code></pre>
+    </div>
+
+    <div class="slide">
+      <pre><code class="javascript">
+$('#itemWeight').on('change', function() {
+  $(document).trigger('weightChanged', [ $(this).val() ]);
+});
+
+$('#chooseWeight').on('keyup', function(e) {
+  $(document).trigger('weightChanged', [ $(e.target).val() ]);
+});
+
+$(document).on('weightChanged', function (val) {
+  $.ajax(/*...*/);
+})
+      </code></pre>
+    </div>
+
+    <div class="slide">
+      <h1>Не ахти</h1>
     </div>
 
     <!-- Почему плох бэкбон. -->
@@ -51,12 +85,35 @@
 
     <div class="slide">
       <pre><code class="javascript">
-        $("#input").maccaron();
+var ContentController = Base.Controller.extend({
+  restrictedActions: 'all',
+  defaultAction: 'add',
+  defaultActionType: 'rhp',
+  add: function (params) {
+    return new AddContentView(_.extend({
+      user: Mediator.last('session').get('user'),
+      mode: params.id || params.mode
+    }, params));
+  },
+  showContentParams: function (params) {
+    return new ContentParamsView(params);
+  }
+});
       </code></pre>
     </div>
 
     <div class="slide">
+      <h1>knockout.js</h1>
+    </div>
+
+    <div class="slide">
+      <h1>см. предыдущий доклад</h1>
+    </div>
+
+
+    <div class="slide">
       <h1>Что же делать?</h1>
+      <img src="./i/XpCRP.gif" style="width: 80%;" />
     </div>
 
     <div class="slide">
@@ -70,39 +127,44 @@
     <!-- <h1>Сигнал.</h1> -->
     <div class="slide">
       <pre><code>
-        $("#login").on("click", function (event) {
-          value = $(event.target).val();
-          if (value.length > 0) {
-            $("#notice").text();
-          }
-        });
+$("#login").on("click", function (event) {
+  var value = $(event.target).val();
+  if (value.length > 0) {
+    $("#notice").text(value);
+  }
+});
+      </code></pre>
+    </div>
+
+    <div class="slide">
+      <img src="./i/osignal.png" />
+    </div>
+
+
+    <div class="slide">
+      <pre><code>
+var clickSignal = $("#login").signal("click");
+clickSignal.onValue(function (event) {
+  var value = $(event.target).val();
+  if (value.length > 0) {
+    $("#notice").text(value);
+  }
+});
       </code></pre>
     </div>
 
     <div class="slide">
       <pre><code>
-        var clickSignal = $("#login").signal("click");
-        clickSignal.onValue(function (event) {
-          value = $(event.target).val();
-          if (value.length > 0) {
-            $("#notice").text();
-          }
-        });
-      </code></pre>
-    </div>
-
-    <div class="slide">
-      <pre><code>
-        var clickSignal = $("#login").signal("click");
-        var valueSignal = clickSignal.map(function (event) {
-          return $(event.target).val();
-        });
-        var nonEmptyValueSignal = valueSignal.filter(function (value) {
-          return value.length > 0;
-        });
-        nonEmptyValueSignal.onValue(function (value) {
-          $("#notice").text(value);
-        });
+var clickSignal = $("#login").signal("click");
+var valueSignal = clickSignal.map(function (event) {
+  return $(event.target).val();
+});
+var nonEmptyValueSignal = valueSignal.filter(function (value) {
+  return value.length > 0;
+});
+nonEmptyValueSignal.onValue(function (value) {
+  $("#notice").text(value);
+});
       </code></pre>
     </div>
 
@@ -110,6 +172,7 @@
 
     <div class="slide">
       <h1>Пофантазируем</h1>
+      <img src="./i/fantasy.gif" style="width: 80%;" />
     </div>
 
     <div class="slide">
@@ -118,26 +181,27 @@
 
     <div class="slide">
       <pre><code class="javascript">
-        Signal.unit(); // empty signal
-        Signal.unit(10); // signal with immediate value of 10
+Signal.unit(); // empty signal
+Signal.unit(10); // signal with immediate value of 10
       </code></pre>
     </div>
 
     <div class="slide">
       <pre><code class="javascript">
-        Signal.error(10); // signal with immediate error of 10
+Signal.error(10); // signal with immediate error of 10
       </code></pre>
     </div>
 
     <div class="slide">
       <pre><code class="javascript">
-        Signal.fromPromise($.ajax(params));
+Signal.fromPromise($.ajax(params));
       </code></pre>
     </div>
 
     <div class="slide">
       <pre><code class="javascript">
-        $("#input").signal("keyup");
+Signal.fromDom($("#input"), "keyup");
+$("#input").signal("keyup");
       </code></pre>
     </div>
 
@@ -156,7 +220,7 @@
     <div class="slide">
       <pre><code class="javascript">
         priceValue.filter(function(x) {
-          return x > 0;
+          return x >= 10;
         });
       </code></pre>
     </div>
@@ -195,32 +259,34 @@
 
     <div class="slide">
       <pre><code class="javascript">
-        var inc = plusClicks.map(function() { return 1; });
-        var dec = minusClicks.map(function() { return -1; });
-        var change = plus.merge(minus);
+var inc = plusClicks.map(function() { return 1; });
+var dec = minusClicks.map(function() { return -1; });
+var change = plus.merge(minus);
       </code></pre>
     </div>
 
     <div class="slide">
       <pre><code class="javascript">
-        var usernameOk = username.map(function(x) {
-          return x.length > 0;
-        })
-        username.zip(usernameOk)
+var usernameOk = username.map(function(x) {
+  return x.length > 0;
+});
+
+username.zip(usernameOk);
+// ["jon", false], ["john", true]...
       </code></pre>
     </div>
 
     <div class="slide">
       <pre><code class="javascript">
-        password.zipWith(passwordConfirmation,
-                         function(l, r) { return l == r; });
+password.zipWith(passwordConfirmation,
+                 function(l, r) { return l == r; });
       </code></pre>
     </div>
 
     <div class="slide">
       <pre><code class="javascript">
         usernameOk.and(passwordOk);
-        drivingLicensePresent.or(hasCar.not());
+        hasDrivingLicense.or(hasCar.not());
       </code></pre>
     </div>
 
@@ -238,6 +304,7 @@
 
     <div class="slide">
       <h1>Хардкор</h1>
+      <img src="./i/hardcore.gif" style="width: 80%;" />
     </div>
 
     <div class="slide">
@@ -253,24 +320,29 @@
 
     <div class="slide">
       <pre><code class="javascript">
-        listenTo.flatMap(function(target) {
-          if (target.source == "dom") {
-            return Jnoid.fromDOM($(target.object), "click");
-          } else if (target.source == "ajax") {
-            return Jnoid.fromPromise($.ajax(target.object));
-          } else {
-            return Jnoid.unit();
-          }
-        }
+listenTo.flatMap(function(target) {
+  if (target.source == "dom") {
+    return Signal.fromDOM($(target.object), "click");
+  } else if (target.source == "ajax") {
+    return Signal.fromPromise($.ajax(target.object));
+  } else {
+    return Signal.unit();
+  }
+}
       </code></pre>
     </div>
 
     <div class="slide">
       <pre><code class="javascript">
-        requests = usernames.map(function(u) {
-          return { url: "/check-username/" + u; }
-        });
-        requests.flatMapLatest($.ajax);
+    var requests = usernames.map(function(u) {
+      return { url: "/check-username/" + u; }
+    });
+    requests.flatMapLatest(function (params) {
+      return Signal.fromPromise($.ajax(params));
+    });
+    // usernames     => "John",          "Peter"
+    // requests      => {"url": "/check-username/John"}, ...
+    // flatMapLatest => {correct: true}, {correct: false}
       </code></pre>
     </div>
 
@@ -282,12 +354,19 @@
     <!-- <h1>Стало проще?</h1> -->
     <div class="slide">
       <h1>Стало проще?</h1>
+      <img src="./i/easy.gif" style="width: 80%;" />
     </div>
 
     <!-- <h1>Гитхаб</h1> -->
     <div class="slide">
-      <p style="text-align: center; text-decoration: underline;">http://it-vecherka.github.io/jnoid</p>
+      <p style="text-align: center; text-decoration: underline;"><span style="color: #cccccc;">http://</span>it-vecherka.<span style="color: #cccccc;">github.io/</span><strong>jnoid</strong></p>
     </div>
+
+    <div class="slide">
+      <h1>Пока!</h1>
+      <img src="./i/bye.gif" style="width: 80%;" />
+    </div>
+
   </div>
 </body>
 </html>
