@@ -8,18 +8,19 @@ shorter and simpler.
 
     Jnoid = {}
 
-The core idea is having an abstraction of `Signal` which is a time-varying
-value, which you can subscribe on.
+The core idea is having an abstraction of `EventStream` which is a discrete
+sequence of values and an abstraction of a `Signal` which is a continous
+time-varying value, both of which you can subscribe on.
 
-Signal
-------
+EventStream
+-----------
 
-We represent signal values as instances of Maybe monad. To know about it more,
+We represent event values as instances of Maybe monad. To know about it more,
 see section Maybe below.
 
-Class `Signal` will be determined via a `subscribe function`.
+Class `EventStream` will be determined via a `subscribe` function.
 
-    class Signal
+    class EventStream
 
 Helpers
 -------
@@ -54,7 +55,7 @@ Exports
 
 We now need to make our objects usable outside:
 
-    for name, value of {Signal, Maybe, Some, None}
+    for name, value of {EventStream, Maybe, Some, None}
       Jnoid[name] = value
 
     if define?.amd
