@@ -19,9 +19,6 @@ describe 'Maybe', ->
     it 'is not empty', ->
       assert.notOk new Some(5).isEmpty()
 
-    it 'wraps to array', ->
-      assert.deepEqual new Some(5).toArray(), [5]
-
   describe 'None', ->
     it 'is Maybe', ->
       assert.instanceOf None, Maybe
@@ -37,6 +34,3 @@ describe 'Maybe', ->
 
     it 'is empty', ->
       assert.ok None.isEmpty()
-
-    it 'wraps to empty array', ->
-      assert.deepEqual None.toArray(), []

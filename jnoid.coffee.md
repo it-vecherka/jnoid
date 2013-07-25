@@ -43,14 +43,12 @@ We represent signal values as instances of `Maybe` monad.
       map: (f) ->
         new Some(f @value)
       isEmpty: -> false
-      toArray: -> [@value]
 
     None = new class extends Maybe
       getOrElse: (value) -> value
       filter: -> None
       map: -> None
       isEmpty: -> true
-      toArray: -> []
 
 Type aliases for events:
 
