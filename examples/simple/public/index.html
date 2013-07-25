@@ -51,7 +51,7 @@
 
   <script type="text/javascript" charset="utf-8">
     var textFieldValue = function(textField) {
-      return Jnoid.fromDOM(textField, "keyup input").
+      return Jnoid.Signal.fromDOM(textField, "keyup input").
                    map(function (e) { return $(e.target).val() }).
                    prepend($(textField).val()).
                    skipDuplicates();
@@ -69,7 +69,7 @@
     var nonEmpty = function (x) { return x.length > 0 }
 
     var validateAjax = function(params) {
-      return Jnoid.fromPromise($.ajax(params)).
+      return Jnoid.Signal.fromPromise($.ajax(params)).
         prepend(Messages.checking).
         map(function () { return Messages.good }).
         recover(function (e) { return e.responseText } )

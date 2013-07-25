@@ -41,9 +41,9 @@ and isolated from pure logic.
 All right, what do we do?
 -------------------------
 
-Let think of the primitives. The core will be `EventStream` abstraction
+Let think of the primitives. The core will be `Signal` abstraction
 - a representation of the continous discrete events line. We're going then to
-write some compositions for the streams and some ways to construct the streams
+write some compositions for the signals and some ways to construct the signals
 from various sources.
 
 So at step zero we define the object we export. Let's call our library "Jnoid".
@@ -77,7 +77,7 @@ functions in it.
       filter: (f)-> f @value
       fmap: (f)-> new Value f @value
 
-`Error` class is going to represent an important case where in some stream an
+`Error` class is going to represent an important case where in some signal an
 error pops out. This will have to be correctly composed in our combinators.
 
     class Error extends Event
@@ -86,8 +86,8 @@ error pops out. This will have to be correctly composed in our combinators.
       describe: -> "<error> #{@error}"
       inspect: -> "Event.Error<#{@error}>"
 
-`End` is a special case for the stream end. We could define it as a singleton,
-but let's be simple for a while for the stream end.
+`End` is a special case for the signal end. We could define it as a singleton,
+but let's be simple for a while for the signal end.
 
     class End extends Event
       constructor: ->
@@ -100,13 +100,13 @@ A handy function can be:
 
     toEvent = (x) -> if x instanceof Event then x else new Value x
 
-Now let's think about the `EventStream` class. How it's going to be
+Now let's think about the `Signal` class. How it's going to be
 represented?
 
-EventStream
------------
+Signal
+------
 
-The core behaviour of the `EventStream` we define with a function we call
+The core behaviour of the `Signal` we define with a function we call
 `subscribe` which is provided to the constructor. This `subscribe` function
 itself is a function that accepts a function, `subscriber`, that will receive
 Events.  `subscribe` will get the events and pass it to the `subscriber`
@@ -116,29 +116,20 @@ Let think in advance of termination. Let the `subscribe` function to return a
 function (it's FP, dude!) that, when called, will do the unsubscribing, which
 will release all the resources captured.
 
+    class Signal
+      constructor: (subscribe) ->
+        @subscribe = new Dispatcher(subscribe).subscribe
+
 An altertative way will be that if a `subscriber`, and that's the only function
 we've yet discussed that will be written in application code, to return some
 special value, and if it does, we will also do the unsubscribe. By the way, we
-need to define these special value. Let's be simple:
+need to define these special values. Let's be simple:
 
-    Jnoid.more = "<more>"
-    Jnoid.noMore = "<no more>"
-
-Let's also at once define a poller that asserts if we're given
-`Jnoid.noMore`: 
-
-    tapUnsub = (reply, unsub)->
-      unsub() if reply == Jnoid.noMore
-      reply
+      @more: "<more>"
+      @noMore: "<no more>"
 
 We could define it via K-combinator, but it would be even
 more code.
-
-Now finally:
-
-    class EventStream
-      constructor: (subscribe) ->
-        @subscribe = new Dispatcher(subscribe).subscribe
 
 
 ### What's that dispatcher?
@@ -153,7 +144,7 @@ Trivial constructors
 Let's say we want to send just a list of events. What do we do?
 
       @fromList = (list)->
-        new EventStream (sink)->
+        new Signal (sink)->
           sink (toEvent value) for value in list
           sink (new End)
           nop
@@ -161,27 +152,27 @@ Let's say we want to send just a list of events. What do we do?
 `nop` is a function that does nothing. We'll define this obvious helper
 functions later.
 
-Now let's define the varargs version of `EventStream.fromList`.
+Now let's define the varargs version of `Signal.fromList`.
 
       @unit = (args...)-> @fromList(args)
 
-An interesting thing about `EventStream.unit` is that if it's called with one
+An interesting thing about `Signal.unit` is that if it's called with one
 (or no) arguments, it conforms with a
 [monadic](http://en.wikipedia.org/wiki/Monad_(functional_programming) concept
 of unit. If we later define bind, and they will conform monadic laws,
-`EventStream` will become a monad. It's FP, dude!
+`Signal` will become a monad. It's FP, dude!
 
-But in this case we need another unit - to spawn stream of one error.
+But in this case we need another unit - to spawn signal of one error.
 
       @error = (error)->
-        new EventStream (sink)->
+        new Signal (sink)->
           sink new Error error
           sink new End
           nop
 
 ### Logging
 
-This trivial `EventStream` function will help us a lot:
+This trivial `Signal` function will help us a lot:
 
       log: (args...) ->
         @subscribe (event) -> console?.log?(args..., event.describe())
@@ -191,13 +182,13 @@ Accessing
 ---------
 
 `subscribe` are nesessary but raw, as they pass the event class, not
-it's value. Let's define more convenient access to the stream.
+it's value. Let's define more convenient access to the signal.
 
       onValue: (f) ->
-        @subscribe (event) -> if event.isValue() then f(event.value) else Jnoid.more
+        @subscribe (event) -> if event.isValue() then f(event.value) else Signal.more
 
       onError: (f) ->
-        @subscribe (event) -> if event.isError() then f(event.error) else Jnoid.more
+        @subscribe (event) -> if event.isError() then f(event.error) else Signal.more
 
 Transformers
 ------------
@@ -212,13 +203,13 @@ are.
 
       withHandler: (handler) ->
         dispatcher = new Dispatcher(@subscribe, handler)
-        new EventStream(dispatcher.subscribe)
+        new Signal(dispatcher.subscribe)
 
       map: (f) ->
         @withHandler (event) -> @push event.fmap(f)
 
       filter: (f) ->
-        @withHandler (event) -> if event.filter(f) then @push event else Jnoid.more
+        @withHandler (event) -> if event.filter(f) then @push event else Signal.more
 
 We can now receive only non-value events this way:
 
@@ -227,7 +218,7 @@ We can now receive only non-value events this way:
 To have values, however, we'll have to define a custom function:
 
       values: ->
-        @withHandler (event) -> unless event.isError() then @push event else Jnoid.more
+        @withHandler (event) -> unless event.isError() then @push event else Signal.more
 
 Let's also declare `recover` that will map errors into values using
 transform function.
@@ -239,7 +230,7 @@ transform function.
           else
             @push event
 
-As a slightly more fun stuff, here's `takeWhile`. It takes values from stream
+As a slightly more fun stuff, here's `takeWhile`. It takes values from signal
 while assering their values with a given function remains true.
 
       takeWhile: (f) ->
@@ -248,12 +239,12 @@ while assering their values with a given function remains true.
             @push event
           else
             @push new End
-            Jnoid.noMore
+            Signal.noMore
 
-We may also want `take` that just takes `n` events from stream.
+We may also want `take` that just takes `n` events from signal.
 
       take: (count) ->
-        return Jnoid.unit() if count <= 0
+        return Signal.unit() if count <= 0
         @withHandler (event) ->
           if event.filter(-> false)
             @push event
@@ -264,7 +255,7 @@ We may also want `take` that just takes `n` events from stream.
             else
               @push event if count == 0
               @push new End
-              Jnoid.noMore
+              Signal.noMore
 
 We can even do fancier stuff. Let's define `withStateMachine` that
 remembers previous value and can take decisions based on it:
@@ -274,10 +265,10 @@ remembers previous value and can take decisions based on it:
         @withHandler (event) ->
           [newState, outputs] = f(state, event)
           state = newState
-          reply = Jnoid.more
+          reply = Signal.more
           for output in outputs
             reply = @push output
-            return reply if reply == Jnoid.noMore
+            return reply if reply == Signal.noMore
           reply
 
 With this for example we can have `skipDuplicates` which is extremely
@@ -300,13 +291,13 @@ basic combinator. The basic is a really powerful `flatMap`. Let's think what
 it's going to do in our case.
 
 `map` receives a function that transforms event value to another value. A more
-general approach is that we take each value in a stream and start a stream with
-it. So the function we pass there will create a new stream based on a value.
-Afterwards we join all the streams collecting values from all of them.
+general approach is that we take each value in a signal and start a signal with
+it. So the function we pass there will create a new signal based on a value.
+Afterwards we join all the signal collecting values from all of them.
 
-It's going to be a complex stuff. It has to listen to the source stream and
-spawn the streams, joining their subscribes. It'll also have to terminate
-properly. The 'and' conditions of termination of the resulting stream is:
+It's going to be a complex stuff. It has to listen to the source signal and
+spawn the signal, joining their subscribes. It'll also have to terminate
+properly. The 'and' conditions of termination of the resulting signal is:
 
 * Source has ended.
 * All of the children have ended.
@@ -316,7 +307,7 @@ such things only one more time.
 
       flatMap: (f) ->
         root = this
-        new EventStream (sink) ->
+        new Signal (sink) ->
           children = []
           rootEnd = false
           unsubRoot = ->
@@ -344,7 +335,7 @@ such things only one more time.
                 if event.isEnd()
                   removeChild()
                   childEnded = true
-                  Jnoid.noMore
+                  Signal.noMore
                 else
                   tapUnsub sink(event), unbind
               unsubChild = child.subscribe handler
@@ -352,58 +343,59 @@ such things only one more time.
           unsubRoot = root.subscribe(spawner)
           unbind
 
-By the way, this was the most tricky part to make EventStream kind of a monad
+By the way, this was the most tricky part to make Signal kind of a monad
 (controversial as always). In a Haskell world this function is usually called
 `bind`, let's make an alias:
 
       bind: (args...)-> @flatMap(args...)
 
 This combinator gives us lots of power. Imagine at first place that we want
-to merge streams. It's unbelievably simple ( `id` is a function that
-returns it's first argument).
+to merge signals. It's unbelievably simple:
 
-      merge: (others...)-> EventStream.fromList([@, others...]).join()
+      merge: (others...)-> Signal.fromList([@, others...]).join()
       join: -> @flatMap(id)
 
-Join transforms stream of streams into just a stream, so another common
+`id` is a function that returns it's first argument.
+
+Join transforms signal of signal into just a signal, so another common
 name for it is flatten.
 
       flatten: -> @join()
 
 Another example is that we can easily implement a delay.
 
-      delay: (delay)-> @flatMap (x)-> Jnoid.later(delay, x)
+      delay: (delay)-> @flatMap (x)-> Signal.later(delay, x)
 
-We know we haven't defined `Jnoid.later` yet with all similar fancy
+We know we haven't defined `Signal.later` yet with all similar fancy
 constructors, but it's obvious - something that takes a value and returns a
-stream that pops this value in a given amount of time, then ends.
+signal that pops this value in a given amount of time, then ends.
 
 For fun, note that we could define `map` as:
 
-      collect: (f)-> @flatMap (x)-> EventStream.unit(f(x))
+      collect: (f)-> @flatMap (x)-> Signal.unit(f(x))
 
 Zip
 ---
 
-But that's not all the power we need. We also need to zip streams. Zipping is
-turning a list of streams to a stream that on value in any of them sends the
-tuple of all their latest values. It can terminate when all the streams ended
-or when any of the streams ended - those'll serve different purposes.
+But that's not all the power we need. We also need to zip signals. Zipping is
+turning a list of signals to a signal that on value in any of them sends the
+tuple of all their latest values. It can terminate when all the signals ended
+or when any of the signals ended - those'll serve different purposes.
 
 Again as with the `flatMap` it'll be fat, ugly and operate mutable state.
 But you don't have to worry about it as long as your code will be pure.
 
-These functions do not have the main stream so we define them as class
+These functions do not have the main signal so we define them as class
 functions:
 
-      @zip: (streams, endChecker = all) ->
-        if streams.length
-          values = (undefined for s in streams)
-          new EventStream (sink) =>
+      @zip: (signals, endChecker = all) ->
+        if signals.length
+          values = (undefined for s in signals)
+          new Signal (sink) =>
             unsubscribed = false
-            unsubs = (nop for s in streams)
+            unsubs = (nop for s in signals)
             unsubAll = (-> f() for f in unsubs ; unsubscribed = true)
-            ends = (false for s in streams)
+            ends = (false for s in signals)
             checkEnd = ->
               if endChecker(ends)
                 tapUnsub sink(new End()), unsubAll
@@ -412,7 +404,7 @@ functions:
                 if (event.isEnd())
                   markEnd()
                   checkEnd()
-                  Jnoid.noMore
+                  Signal.noMore
                 else if event.isError()
                   tapUnsub sink(event), unsubAll
                 else
@@ -420,53 +412,53 @@ functions:
                   if all(values, (x) -> x != undefined)
                     tapUnsub sink(toEvent map(id, values)), unsubAll
                   else
-                    Jnoid.more
+                    Signal.more
             sinkFor = (index) ->
               combiningSink(
                 (-> ends[index] = true)
                 ((x) -> values[index] = x)
               )
-            for stream, index in streams
-              unsubs[index] = stream.subscribe (sinkFor index) unless unsubscribed
+            for signal, index in signals
+              unsubs[index] = signal.subscribe (sinkFor index) unless unsubscribed
             unsubAll
         else
-          EventStream.unit([])
+          Signal.unit([])
 
-      @zipAndStop: (streams)-> @zip(streams, any)
+      @zipAndStop: (signals)-> @zip(signals, any)
 
 The combinators we've just done are unbelievably useful. Let's first expand
 them to `zipWith` and `zipWithAndStop` to see it.
 
-      @zipWith: (streams, f)-> @zip(streams).map(uncurry(f))
-      @zipWithAndStop: (streams, f)-> @zipAndStop(streams).map(uncurry(f))
+      @zipWith: (signals, f)-> @zip(signals).map(uncurry(f))
+      @zipWithAndStop: (signals, f)-> @zipAndStop(signals).map(uncurry(f))
 
 Let's proxy this useful stuff to instance methods:
 
-      zip: (others...)-> EventStream.zip [@, others...]
-      zipWith: (others..., f)-> EventStream.zipWith [@, others...], f
-      zipAndStop: (others...)-> EventStream.zipAndStop [@, others...]
-      zipWithAndStop: (others..., f)-> EventStream.zipWithAndStop [@, others...], f
+      zip: (others...)-> Signal.zip [@, others...]
+      zipWith: (others..., f)-> Signal.zipWith [@, others...], f
+      zipAndStop: (others...)-> Signal.zipAndStop [@, others...]
+      zipWithAndStop: (others..., f)-> Signal.zipWithAndStop [@, others...], f
 
-Now let's go and define boolean algebra over our streams:
+Now let's go and define boolean algebra over our signals:
 
-      and: (others...)-> EventStream.zipWith [@, others...], (a, b)-> a && b
-      or: (others...)-> EventStream.zipWith [@, others...], (a, b)-> a || b
+      and: (others...)-> Signal.zipWith [@, others...], (a, b)-> a && b
+      or: (others...)-> Signal.zipWith [@, others...], (a, b)-> a || b
       not: -> @map (x)-> !x
 
-Feel the power? Let's do a complex stuff. Combine two streams so that we pop
-the first stream until we have a value on the second stream.
+Feel the power? Let's do a complex stuff. Combine two signals so that we pop
+the first signal until we have a value on the second signal.
 
       toStopper: ->
         @withHandler (event) ->
           @push new End
-          Jnoid.noMore
-      prepend: (x)-> EventStream.unit(x).merge(@)
+          Signal.noMore
+      prepend: (x)-> Signal.unit(x).merge(@)
       takeUntil: (stopper) ->
-        EventStream.zipWithAndStop [@, stopper.toStopper().prepend(1)], left
+        Signal.zipWithAndStop [@, stopper.toStopper().prepend(1)], left
 
 Having `takeUntil` we can do a sophisticated `flatMapLatest`. It'll create a
-steam that joins all the streams created with a spawner function, but in a
-different way. It'll take only the values from the latest stream spawned.
+steam that joins all the signals created with a spawner function, but in a
+different way. It'll take only the values from the latest signal spawned.
 
       flatMapLatest: (f) -> @flatMap (x) => f(x).takeUntil(@)
 
@@ -474,15 +466,15 @@ Let's combine it with `later` to implement a classic `debounce`:
 
       debounce: (delay) ->
         @flatMapLatest (value) ->
-          Jnoid.later delay, value
+          Signal.later delay, value
 
 Take a break. Think of all the power we got. Now we want to create these
-streams from everything.
+signals from everything.
 
 Constructors
 ------------
 
-Stop here and think about the basic pattern. New EventStream is defined via
+Stop here and think about the basic pattern. New Signal is defined via
 `subscribe` function and we've already negotiated about the rules about it. Let's
 attempt to formalize these rules so that we'll only have to specify the
 behaviour.
@@ -492,74 +484,59 @@ handy way to handle them. Transform is allowed to return an array of events and
 all of them will be popped out to subscriber.
 
       @fromBinder: (binder, transform = id) ->
-        new EventStream (sink) ->
+        new Signal (sink) ->
           unbinder = binder (args...) ->
             events = toArray transform args...
             for e in events
               event = toEvent e
               tap sink(event), (reply)->
-                unbinder() if reply == Jnoid.noMore or event.isEnd()
+                unbinder() if reply == Signal.noMore or event.isEnd()
 
-We're going to expose `Jnoid` variable so the complex way of constructing
-streams we'll place there. Let's first proxy the basics.
-
-    Jnoid.unit = EventStream.unit
-    Jnoid.fromList = EventStream.fromList
-    Jnoid.fromBinder = EventStream.fromBinder
-
-By the way, let's also copy our useful combinators.
-
-    Jnoid.zip = EventStream.zip
-    Jnoid.zipWith = EventStream.zipWith
-    Jnoid.zipAndStop = EventStream.zipAndStop
-    Jnoid.zipWithAndStop = EventStream.zipWithAndStop
-
-Let's use our binder to get aquainted. We want to create a stream that will
+Let's use our binder to get aquainted. We want to create a signal that will
 poll some io function with a given interval. To recall, we should return a
 function that will release the resources, so we return `clearInterval`.
 
 
-    Jnoid.fromPoll = (delay, poll) ->
-      Jnoid.fromBinder (handler) ->
-        i = setInterval(handler, delay)
-        -> clearInterval(i)
-      , poll
+      @fromPoll: (delay, poll) ->
+        @fromBinder (handler) ->
+          i = setInterval(handler, delay)
+          -> clearInterval(i)
+        , poll
 
-With this we can easily define `Jnoid.later` we've been using in delay.
+With this we can easily define `Signal.later` we've been using in delay.
 
-    Jnoid.sequentially = (delay, list)->
-      index = 0
-      Jnoid.fromPoll delay,->
-        value = list[index++]
-        if index < list.length
-          value
-        else if index == list.length
-          [value, new End]
-        else
-          new End
+      @sequentially: (delay, list)->
+        index = 0
+        @fromPoll delay,->
+          value = list[index++]
+          if index < list.length
+            value
+          else if index == list.length
+            [value, new End]
+          else
+            new End
 
-    Jnoid.later = (delay, value)->
-      Jnoid.sequentially(delay, [value])
+      @later: (delay, value)->
+        @sequentially(delay, [value])
 
 Let's also define a function that works on promises, e.g., ajax. The
 resource releasing here for ajax is `abort`. We should also handle promise
-errors here. In a transform function we attach end to our stream. As we
+errors here. In a transform function we attach end to our signal. As we
 hoped, transform helps us a lot.
 
-
-    Jnoid.fromPromise = (promise) ->
-      Jnoid.fromBinder (handler) ->
-        promise.then handler, (e) -> handler new Error e
-        -> promise.abort?()
-      , (value) -> [value, new End]
+      @fromPromise: (promise) ->
+        @fromBinder (handler) ->
+          promise.then handler, (e) -> handler new Error e
+          -> promise.abort?()
+        , (value) -> [value, new End]
 
 Interesting that with `fromPromise` and things like `flatMap` we can do a
-sophisticated thing: `promises()` stream transformer. It'll turn a stream
-of some values into a stream of returned values from those promises. A
+sophisticated thing: `promises()` signal transformer. It'll turn a signal
+of some values into a signal of returned values from those promises. A
 good example of `promise` you can pass to that function is `jQuery.ajax`.
 
-    EventStream::promises = (promise)->
-      @flatMapLatest (params)-> Jnoid.fromPromise promise params
+      promises: (promise)->
+        @flatMapLatest (params)-> Signal.fromPromise promise params
 
 Finally let's define the way to receive events from DOM objects. We'll do
 it assuming we're called in jQuery/Zepto fashion.
@@ -568,13 +545,13 @@ We allow to override `transform` - by default it'll take the first
 argument, which is usually a jQuery event. We use `on` to subscribe and
 `off` to unsubscribe.
 
-    Jnoid.fromDOM = (element, event, selector, transform) ->
-      [eventTransformer, selector] = [selector, null] if isFunction(selector)
+      @fromDOM: (element, event, selector, transform) ->
+        [eventTransformer, selector] = [selector, null] if isFunction(selector)
 
-      Jnoid.fromBinder (handler) =>
-        element.on(event, selector, handler)
-        => element.off(event, selector, handler)
-      , eventTransformer
+        @fromBinder (handler) =>
+          element.on(event, selector, handler)
+          => element.off(event, selector, handler)
+        , eventTransformer
 
 Dispatcher
 ----------
@@ -592,7 +569,7 @@ observable from the real world. We're good.
         @push = (event) =>
           for sink in sinks
             tapUnsub sink(event), -> remove(sink, sinks)
-          if (sinks.length > 0) then Jnoid.more else Jnoid.noMore
+          if (sinks.length > 0) then Signal.more else Signal.noMore
         handleEvent ?= (event) -> @push event
         @handleEvent = (event) => handleEvent.apply(this, [event])
         @subscribe = (sink) =>
@@ -608,6 +585,10 @@ Boring stuff
 ### Handy functions
 
 There are a lot of trivial handy functions we've used above so here they are:
+
+    tapUnsub = (reply, unsub)->
+      unsub() if reply == Signal.noMore
+      reply
 
     nop = ->
     id = (x)-> x
@@ -640,7 +621,7 @@ There are a lot of trivial handy functions we've used above so here they are:
 
 We now need to make our objects usable outside.
 
-    for name, value of {EventStream, Event, Value, Error, End}
+    for name, value of {Signal, Event, Value, Error, End}
       Jnoid[name] = value
 
     if define?.amd

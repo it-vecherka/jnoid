@@ -1,15 +1,15 @@
 assert = require('chai').assert
 h = require('./test_helpers')
 Jnoid = require '../jnoid.coffee.md'
-{Event, Value, Error, End, EventStream} = Jnoid
+{Event, Value, Error, End, Signal} = Jnoid
 
 describe 'more and noMore', ->
   it 'is the same', ->
-    assert.equal(Jnoid.more, Jnoid.more)
-    assert.equal(Jnoid.noMore, Jnoid.noMore)
+    assert.equal(Signal.more, Signal.more)
+    assert.equal(Signal.noMore, Signal.noMore)
 
   it 'is different', ->
-    assert.notEqual(Jnoid.more, Jnoid.noMore)
+    assert.notEqual(Signal.more, Signal.noMore)
 
 
 describe 'Event', ->
@@ -66,23 +66,23 @@ describe 'Event', ->
 describe 'fromList', ->
   it 'works', (done)->
     h.expectValues [1, 2, 3],
-      Jnoid.fromList([1, 2, 3]),
+      Signal.fromList([1, 2, 3]),
       done
 
 describe 'unit', ->
   it 'sends a single event', (done)->
     h.expectValues [1],
-      Jnoid.unit(1),
+      Signal.unit(1),
       done
 
   it 'does not send anything with no arguments', (done)->
     h.expectValues [],
-      Jnoid.unit(),
+      Signal.unit(),
       done
 
 describe 'onValue', ->
   it 'listens to values only', ->
-    stream = new EventStream (sink)->
+    stream = new Signal (sink)->
       sink new Value 5
       sink new Error 'whut'
       sink new Value 10
@@ -96,7 +96,7 @@ describe 'onValue', ->
 
 describe 'onError', ->
   it 'listens to values only', ->
-    stream = new EventStream (sink)->
+    stream = new Signal (sink)->
       sink new Value 5
       sink new Error 'whut'
       sink new Value 10
@@ -110,21 +110,21 @@ describe 'onError', ->
 
 describe 'map', ->
   it 'transforms values', (done)->
-    stream = Jnoid.fromList([1, 2, 3])
+    stream = Signal.fromList([1, 2, 3])
     h.expectValues [2, 4, 6],
       stream.map((x)-> x * 2),
       done
 
 describe 'filter', ->
   it 'filters stream', (done)->
-    stream = Jnoid.fromList([10, 100, 20])
+    stream = Signal.fromList([10, 100, 20])
     h.expectValues [10, 20],
       stream.filter((x)-> x < 50),
       done
 
 describe 'errors', ->
   it 'returns only errors', (done)->
-    stream = new EventStream (sink)->
+    stream = new Signal (sink)->
       sink new Value 50
       sink new Error 'whut'
       sink new Value 100
@@ -134,7 +134,7 @@ describe 'errors', ->
 
 describe 'values', ->
   it 'returns only values', (done)->
-    stream = new EventStream (sink)->
+    stream = new Signal (sink)->
       sink new Value 5
       sink new Error 'whut'
       sink new Value 10
@@ -144,7 +144,7 @@ describe 'values', ->
 
 describe 'recover', ->
   it 'maps errors to values', (done)->
-    stream = new EventStream (sink)->
+    stream = new Signal (sink)->
       sink new Value 5
       sink new Error 'whut'
       sink new Value 10
@@ -156,107 +156,107 @@ describe 'recover', ->
 
 describe 'takeWhile', ->
   it 'takes while', (done)->
-    stream = Jnoid.fromList([10, 100, 20])
+    stream = Signal.fromList([10, 100, 20])
     h.expectValues [10],
       stream.takeWhile((x)-> x < 50),
       done
 
 describe 'take', ->
   it 'takes n', (done)->
-    stream = Jnoid.fromList([10, 100, 20, 200])
+    stream = Signal.fromList([10, 100, 20, 200])
     h.expectValues [10, 100],
       stream.take(2),
       done
 
 describe 'skipDuplicates', ->
   it 'skips duplicates', (done)->
-    stream = Jnoid.fromList([10, 10, 200, 200])
+    stream = Signal.fromList([10, 10, 200, 200])
     h.expectValues [10, 200],
       stream.skipDuplicates(),
       done
 
 describe 'flatMap', ->
   it 'combines spawned streams (trivial case)', (done)->
-    stream = Jnoid.fromList([1, 2, 3])
+    stream = Signal.fromList([1, 2, 3])
     h.expectValues [1, 2, 3],
-      stream.flatMap((x)-> Jnoid.unit(x)),
+      stream.flatMap((x)-> Signal.unit(x)),
       done
 
 describe 'merge', ->
   it 'merges lots of streams', (done)->
-    first = Jnoid.fromList([1, 2, 3])
-    second = Jnoid.fromList([10, 20, 30])
-    third = Jnoid.fromList([100, 200, 300])
+    first = Signal.fromList([1, 2, 3])
+    second = Signal.fromList([10, 20, 30])
+    third = Signal.fromList([100, 200, 300])
     h.expectValues [1, 2, 3, 10, 20, 30, 100, 200, 300],
       first.merge(second, third),
       done
 
 describe 'zip', ->
   it 'zips streams', (done)->
-    first = Jnoid.sequentially(10, [1, 2])
-    second = Jnoid.sequentially(15, [100, 200, 300])
+    first = Signal.sequentially(10, [1, 2])
+    second = Signal.sequentially(15, [100, 200, 300])
     h.expectValues [[1, 100], [2, 100], [2, 200], [2, 300]],
-      Jnoid.zip([first, second]),
+      Signal.zip([first, second]),
       done
 
 describe 'zipWith', ->
   it 'zips with function', (done)->
-    first = Jnoid.sequentially(10, [1, 2])
-    second = Jnoid.sequentially(15, [100, 200, 300])
+    first = Signal.sequentially(10, [1, 2])
+    second = Signal.sequentially(15, [100, 200, 300])
     h.expectValues [101, 102, 202, 302],
-      Jnoid.zipWith([first, second], (x, y) -> x + y),
+      Signal.zipWith([first, second], (x, y) -> x + y),
       done
 
 describe 'zipAndStop', ->
   it 'zips streams and stops on first end', (done)->
-    first = Jnoid.sequentially(10, [1, 2])
-    second = Jnoid.sequentially(15, [100, 200, 300])
+    first = Signal.sequentially(10, [1, 2])
+    second = Signal.sequentially(15, [100, 200, 300])
     h.expectValues [[1, 100], [2, 100]],
-      Jnoid.zipAndStop([first, second]),
+      Signal.zipAndStop([first, second]),
       done
 
 describe 'zipWithAndStop', ->
   it 'zips with function and stops on first end', (done)->
-    first = Jnoid.sequentially(10, [1, 2])
-    second = Jnoid.sequentially(15, [100, 200, 300])
+    first = Signal.sequentially(10, [1, 2])
+    second = Signal.sequentially(15, [100, 200, 300])
     h.expectValues [101, 102],
-      Jnoid.zipWithAndStop([first, second], (x, y) -> x + y),
+      Signal.zipWithAndStop([first, second], (x, y) -> x + y),
       done
 
 describe 'and', ->
   it 'executes boolean "and" between streams', (done)->
-    first = Jnoid.sequentially(10, [false, true])
-    second = Jnoid.sequentially(15, [false, true])
+    first = Signal.sequentially(10, [false, true])
+    second = Signal.sequentially(15, [false, true])
     h.expectValues [false, false, true],
       first.and(second),
       done
 
 describe 'or', ->
   it 'executes boolean "or" between streams', (done)->
-    first = Jnoid.sequentially(10, [false, true])
-    second = Jnoid.sequentially(15, [false, true])
+    first = Signal.sequentially(10, [false, true])
+    second = Signal.sequentially(15, [false, true])
     h.expectValues [false, true, true],
       first.or(second),
       done
 
 describe 'not', ->
   it 'executes boolean "not" on stream', (done)->
-    stream = Jnoid.fromList([false, true, false])
+    stream = Signal.fromList([false, true, false])
     h.expectValues [true, false, true],
       stream.not(),
       done
 
 describe 'prepend', ->
   it 'prepends a value to a stream', (done)->
-    stream = Jnoid.fromList([10, 20, 30])
+    stream = Signal.fromList([10, 20, 30])
     h.expectValues [1, 10, 20, 30],
       stream.prepend(1),
       done
 
 describe 'takeUntil', ->
   it 'takes until other stream pops', (done)->
-    stream = Jnoid.sequentially(10, [10, 20, 30, 40, 50])
-    stopper = Jnoid.later(35, 100)
+    stream = Signal.sequentially(10, [10, 20, 30, 40, 50])
+    stopper = Signal.later(35, 100)
     h.expectValues [10, 20, 30],
       stream.takeUntil(stopper),
       done
