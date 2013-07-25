@@ -351,6 +351,191 @@ listenTo.flatMap(function(target) {
       <h1>Пример</h1>
     </div>
 
+    <div class="slide">
+      <pre><code class="html">
+&lt;form&gt;<br/>  &lt;div id=&quot;login&quot;&gt;<br/>    &lt;label for=&quot;inputLogin&quot;&gt;Login&lt;/label&gt;<br/>    &lt;input type=&quot;text&quot; id=&quot;inputLogin&quot; name=&quot;login&quot; /&gt;<br/>    &lt;span class=&quot;help-block&quot;&gt;&lt;/span&gt;<br/>  &lt;/div&gt;<br/><br/>  &lt;div id=&quot;fullname&quot;&gt;<br/>    &lt;label for=&quot;inputPassword&quot;&gt;Fullname&lt;/label&gt;<br/>    &lt;input type=&quot;text&quot; id=&quot;inputFullname&quot; name=&quot;fullname&quot; /&gt;<br/>    &lt;span class=&quot;help-block&quot;&gt;&lt;/span&gt;<br/>  &lt;/div&gt;<br/><br/>  &lt;button type=&quot;submit&quot; id=&quot;submit&quot; disabled=&quot;disabled&quot;&gt;<br/>    Sign in<br/>  &lt;/button&gt;<br/>&lt;/form&gt;<br/>
+    </code></pre>
+    </div>
+
+    <div class="slide">
+    <pre><code class="javascript">
+loginMessages.
+  onValue($("#login .help-block").text);
+
+fullnameMessages.
+  onValue($("#fullname .help-block").text);
+
+buttonEnabled.not().
+  onValue(setAttribute($("#submit"), "disabled"));
+    </code></pre>
+    </div>
+
+    <div class="slide">
+    <pre><code class="javascript">
+var setAttribute = function(element, attribute) {
+  return function(value) {
+    $(element).attr(attribute, value)
+  }
+}
+    </code></pre>
+    </div>
+
+    <div class="slide">
+    <pre><code class="javascript">
+loginMessages.
+  onValue($("#login .help-block").text);
+
+fullnameMessages.
+  onValue($("#fullname .help-block").text);
+
+buttonEnabled.not().
+  onValue(setAttribute($("#submit"), "disabled"));
+    </code></pre>
+    </div>
+
+    <div class="slide">
+    <pre><code class="javascript">
+
+var fullnameMessages = fullname.map(validateFullname);
+
+    </code></pre>
+    </div>
+
+    <div class="slide">
+    <pre><code class="javascript">
+
+var textFieldValue = function(textField) {
+  return $(textField).signal('keyup input').
+           map(function (e) { return $(e.target).val() }).
+           prepend($(textField).val()).
+           skipDuplicates();
+}
+
+var fullname = textFieldValue($("#fullname input"));
+
+var fullnameMessages = fullname.map(validateFullname);
+
+    </code></pre>
+    </div>
+    <div class="slide">
+    <pre><code class="javascript">
+
+var validateFullname = function (fullname) {
+  if (fullname.length <= 0) {
+    return Messages.provideFullname
+  } else if (fullname.length > 30) {
+    return Messages.fullnameTooLong
+  } else {
+    return Messages.good
+  }
+}
+
+var fullnameMessages = fullname.map(validateFullname);
+
+    </code></pre>
+    </div>
+
+    <div class="slide">
+    <pre><code class="javascript">
+loginMessages.
+  onValue($("#login .help-block").text);
+
+fullnameMessages.
+  onValue($("#fullname .help-block").text);
+
+buttonEnabled.not().
+  onValue(setAttribute($("#submit"), "disabled"));
+    </code></pre>
+    </div>
+
+
+    <div class="slide">
+    <pre><code class="javascript">
+
+var loginMessages = login.map(validateLogin);
+
+    </code></pre>
+    </div>
+
+    <div class="slide">
+    <pre><code class="javascript">
+
+var loginMessages = login.map(validateLogin).
+                          merge(availMessages);
+
+    </code></pre>
+    </div>
+
+    <div class="slide">
+    <pre><code class="javascript">
+
+var availMessages = login.filter(nonEmpty).
+                          map(toLoginCheck).
+                          flatMapLatest(validateAjax);
+
+var loginMessages = login.map(validateLogin).
+                          merge(availMessages);
+
+    </code></pre>
+    </div>
+
+    <div class="slide">
+    <pre><code class="javascript">
+
+var validateAjax = function(params) {
+  return Signal.fromPromise($.ajax(params)).
+    map(function () { return Messages.good }).
+    recover(function (e) { return e.responseText } ).
+    prepend(Messages.checking);
+}
+
+var toLoginCheck = function(login) {
+  return { url: "/check-login/" + login};
+}
+
+var availMessages = login.filter(nonEmpty).
+                          map(toLoginCheck).
+                          flatMapLatest(validateAjax);
+
+var loginMessages = login.map(validateLogin).
+                          merge(availMessages);
+
+    </code></pre>
+    </div>
+
+    <div class="slide">
+    <pre><code class="javascript">
+loginMessages.
+  onValue($("#login .help-block").text);
+
+fullnameMessages.
+  onValue($("#fullname .help-block").text);
+
+buttonEnabled.not().
+  onValue(setAttribute($("#submit"), "disabled"));
+    </code></pre>
+    </div>
+
+    <div class="slide">
+    <pre><code class="javascript">
+var buttonEnabled = loginMessages.map(isGood).
+                        and(fullnameMessages.map(isGood));
+    </code></pre>
+    </div>
+
+    <div class="slide">
+    <pre><code class="javascript">
+loginMessages.
+  onValue($("#login .help-block").text);
+
+fullnameMessages.
+  onValue($("#fullname .help-block").text);
+
+buttonEnabled.not().
+  onValue(setAttribute($("#submit"), "disabled"));
+    </code></pre>
+    </div>
+
     <!-- <h1>Стало проще?</h1> -->
     <div class="slide">
       <h1>Стало проще?</h1>
@@ -359,7 +544,7 @@ listenTo.flatMap(function(target) {
 
     <!-- <h1>Гитхаб</h1> -->
     <div class="slide">
-      <p style="text-align: center; text-decoration: underline;"><span style="color: #cccccc;">http://</span>it-vecherka.<span style="color: #cccccc;">github.io/</span><strong>jnoid</strong></p>
+      <p style="text-align: center;"><span style="color: #cccccc;">http://</span>it-vecherka.<span style="color: #cccccc;">github.io/</span><strong>jnoid</strong></p>
     </div>
 
     <div class="slide">
