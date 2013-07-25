@@ -107,11 +107,12 @@ EventStream
 -----------
 
 The core behaviour of the `EventStream` we define with a function we call
-`unfold` which is provided to the constructor. This `unfold` function itself is
-a function that accepts a function, `subscriber`, that will receive Events.
-`unfold` will get the events and pass it to the `subscriber` function.
+`subscribe` which is provided to the constructor. This `subscribe` function
+itself is a function that accepts a function, `subscriber`, that will receive
+Events.  `subscribe` will get the events and pass it to the `subscriber`
+function.
 
-Let think in advance of termination. Let the `unfold` function to return a
+Let think in advance of termination. Let the `subscribe` function to return a
 function (it's FP, dude!) that, when called, will do the unsubscribing, which
 will release all the resources captured.
 
@@ -136,19 +137,15 @@ more code.
 Now finally:
 ```coffeescript
 class EventStream
-  constructor: (unfold) ->
-    @unfold = new Dispatcher(unfold).unfold
+  constructor: (subscribe) ->
+    @subscribe = new Dispatcher(subscribe).subscribe
 ```
-If `unfold` scares someone, for the outer application code it may be thought as
-`subscribe`.
-```coffeescript
-@subscribe = @unfold
-```
+
 ### What's that dispatcher?
 
-An abstraction that is complex and dirty. It'll store all of the subscribers and
-propagate the evens popped from `unfold` we passed to it to all of them. It'll
-also maintain the unsubscribe logic. We're going to define it later.
+An abstraction that is complex and dirty. It'll store all of the subscribers
+and propagate the evens popped from `subscribe` we passed to it to all of them.
+It'll also maintain the unsubscribe logic. We're going to define it later.
 
 Trivial constructors
 --------------------
@@ -193,7 +190,7 @@ This trivial `EventStream` function will help us a lot:
 Accessing
 ---------
 
-`unfold`/`subscribe` are nesessary but raw, as they pass the event class, not
+`subscribe` are nesessary but raw, as they pass the event class, not
 it's value. Let's define more convenient access to the stream.
 ```coffeescript
   onValue: (f) ->
@@ -214,8 +211,8 @@ our `map` and `filter` will only touch values and leave errors and end at they
 are.
 ```coffeescript
   withHandler: (handler) ->
-    dispatcher = new Dispatcher(@unfold, handler)
-    new EventStream(dispatcher.unfold)
+    dispatcher = new Dispatcher(@subscribe, handler)
+    new EventStream(dispatcher.subscribe)
 
   map: (f) ->
     @withHandler (event) -> @push event.fmap(f)
@@ -308,7 +305,7 @@ it. So the function we pass there will create a new stream based on a value.
 Afterwards we join all the streams collecting values from all of them.
 
 It's going to be a complex stuff. It has to listen to the source stream and
-spawn the streams, joining their unfolds. It'll also have to terminate
+spawn the streams, joining their subscribes. It'll also have to terminate
 properly. The 'and' conditions of termination of the resulting stream is:
 
 * Source has ended.
@@ -350,9 +347,9 @@ such things only one more time.
               Jnoid.noMore
             else
               tapUnsub sink(event), unbind
-          unsubChild = child.unfold handler
+          unsubChild = child.subscribe handler
           children.push unsubChild if not childEnded
-      unsubRoot = root.unfold(spawner)
+      unsubRoot = root.subscribe(spawner)
       unbind
 ```
 By the way, this was the most tricky part to make EventStream kind of a monad
@@ -430,7 +427,7 @@ functions:
             ((x) -> values[index] = x)
           )
         for stream, index in streams
-          unsubs[index] = stream.unfold (sinkFor index) unless unsubscribed
+          unsubs[index] = stream.subscribe (sinkFor index) unless unsubscribed
         unsubAll
     else
       EventStream.unit([])
@@ -486,7 +483,7 @@ Constructors
 ------------
 
 Stop here and think about the basic pattern. New EventStream is defined via
-`unfold` function and we've already negotiated about the rules about it. Let's
+`subscribe` function and we've already negotiated about the rules about it. Let's
 attempt to formalize these rules so that we'll only have to specify the
 behaviour.
 
@@ -589,8 +586,8 @@ Yes, it stores mutable state, but it's not observable from code - it's just
 observable from the real world. We're good.
 ```coffeescript
 class Dispatcher
-  constructor: (unfold, handleEvent) ->
-    unfold ?= (event) ->
+  constructor: (subscribe, handleEvent) ->
+    subscribe ?= (event) ->
     sinks = []
     @push = (event) =>
       for sink in sinks
@@ -598,9 +595,9 @@ class Dispatcher
       if (sinks.length > 0) then Jnoid.more else Jnoid.noMore
     handleEvent ?= (event) -> @push event
     @handleEvent = (event) => handleEvent.apply(this, [event])
-    @unfold = (sink) =>
+    @subscribe = (sink) =>
       sinks.push(sink)
-      unsubSelf = unfold @handleEvent if sinks.length == 1
+      unsubSelf = subscribe @handleEvent if sinks.length == 1
       ->
         remove(sink, sinks)
         unsubSelf?() unless any sinks
