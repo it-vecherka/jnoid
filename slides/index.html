@@ -2,14 +2,24 @@
 <html>
 <head>
   <title>Jnoid slides</title>
-  <style type="text/css">
-    textarea {
-      width: 100%;
-      min-height: 100px;
-    }
-    .slide {
-      border: 1px solid black;
-    }
+  <script src="http://usepow.com"></script>
+  <script src="http://usepow.com/highlight"></script>
+  <script src="http://usepow.com/mobile"></script>
+  <script src="http://usepow.com/live"></script>
+  <style>
+    .slide { font-family:sans-serif; text-align:center; }
+    .slide.title { text-align:center; }
+    .slide.title .logo { width:50%; height:50%; }
+    .slide h1 { font-size:48em; font-weight:normal; }
+    .slide h2 { font-size:40em; font-weight:bold; }
+    .slide h1, h2 { letter-spacing:-.05em; }
+    .slide h1 .logo { height:1.75em; width:2.25em; vertical-align:middle; }
+    .slide h1 > button { font-size:1em; }
+    .slide a { border:none; color:black; background:#ddd; padding:.25em .5em; border-radius:.25em; }
+    .slide code { text-align:left; font-size:20em; font-family:monospace; padding:1em 2em; }
+    #demo-iframe { border:6em inset; }
+    #animated h1 { margin-top:.25em; }
+    #info { text-align:center; }
   </style>
 </head>
 <body>
@@ -29,13 +39,9 @@
     </div>
 
     <div class="slide">
-      <textarea>
-        <div id="slides">
-            <div class="slide">
-                <h1>Hello, world</h1>
-            </div>
-        </div>
-      </textarea>
+      <pre><code class="javascript">
+        $("#input").maccaron();
+      </code></pre>
     </div>
 
     <!-- Почему плох бэкбон. -->
@@ -44,13 +50,9 @@
     </div>
 
     <div class="slide">
-      <textarea>
-        <div id="slides">
-            <div class="slide">
-                <h1>Hello, world.</h1>
-            </div>
-        </div>
-      </textarea>
+      <pre><code class="javascript">
+        $("#input").maccaron();
+      </code></pre>
     </div>
 
     <div class="slide">
@@ -65,7 +67,7 @@
       <h1>Не нужно придумывать велосипед!</h1>
     </div>
 
-    <!-- <h1>Поток.</h1> -->
+    <!-- <h1>Сигнал.</h1> -->
     <div class="slide">
       <pre><code>
         $("#login").on("click", function (event) {
@@ -79,8 +81,8 @@
 
     <div class="slide">
       <pre><code>
-        var clickStream = $("#login").stream("click");
-        clickStream.onValue(function (event) {
+        var clickSignal = $("#login").signal("click");
+        clickSignal.onValue(function (event) {
           value = $(event.target).val();
           if (value.length > 0) {
             $("#notice").text();
@@ -91,14 +93,14 @@
 
     <div class="slide">
       <pre><code>
-        var clickStream = $("#login").stream("click");
-        var valueStream = clickStream.map(function (event) {
+        var clickSignal = $("#login").signal("click");
+        var valueSignal = clickSignal.map(function (event) {
           return $(event.target).val();
         });
-        var nonEmptyValueStream = valueStream.filter(function (value) {
+        var nonEmptyValueSignal = valueSignal.filter(function (value) {
           return value.length > 0;
         });
-        nonEmptyValueStream.onValue(function (value) {
+        nonEmptyValueSignal.onValue(function (value) {
           $("#notice").text(value);
         });
       </code></pre>
@@ -115,27 +117,27 @@
     </div>
 
     <div class="slide">
-      <pre><code>
-        Jnoid.unit() # empty stream
-        Jnoid.unit(10) # stream with immediate value of 10
+      <pre><code class="javascript">
+        Signal.unit(); // empty signal
+        Signal.unit(10); // signal with immediate value of 10
       </code></pre>
     </div>
 
     <div class="slide">
-      <pre><code>
-        Jnoid.error(10) # stream with immediate error of 10
+      <pre><code class="javascript">
+        Signal.error(10); // signal with immediate error of 10
       </code></pre>
     </div>
 
     <div class="slide">
-      <pre><code>
-        Jnoid.fromPromise($.ajax(params))
+      <pre><code class="javascript">
+        Signal.fromPromise($.ajax(params));
       </code></pre>
     </div>
 
     <div class="slide">
-      <pre><code>
-        $("#input").stream("keyup")
+      <pre><code class="javascript">
+        $("#input").signal("keyup");
       </code></pre>
     </div>
 
@@ -144,38 +146,46 @@
     </div>
 
     <div class="slide">
-      <pre><code>
-        priceValue.map((x)-> x > 0)
+      <pre><code class="javascript">
+        priceValue.map(function(x) {
+          return x > 0;
+        });
       </code></pre>
     </div>
 
     <div class="slide">
-      <pre><code>
-        priceValue.filter((x)-> x > 0)
+      <pre><code class="javascript">
+        priceValue.filter(function(x) {
+          return x > 0;
+        });
       </code></pre>
     </div>
 
     <div class="slide">
-      <pre><code>
-        voteClick.take(10)
+      <pre><code class="javascript">
+        voteClick.take(10);
       </code></pre>
     </div>
 
     <div class="slide">
-      <pre><code>
-        healthPoints.takeWhile((hp)-> hp > 0)
+      <pre><code class="javascript">
+        healthPoints.takeWhile(function(hp) {
+          return hp > 0;
+        });
       </code></pre>
     </div>
 
     <div class="slide">
-      <pre><code>
-        username.skipDuplicates()
+      <pre><code class="javascript">
+        username.skipDuplicates();
       </code></pre>
     </div>
 
     <div class="slide">
-      <pre><code>
-        ajaxResponse.recover((e)-> e.responseText)
+      <pre><code class="javascript">
+        ajaxResponse.recover(function(e) {
+          return e.responseText;
+        })
       </code></pre>
     </div>
 
@@ -184,40 +194,45 @@
     </div>
 
     <div class="slide">
-      <pre><code>
-        plusClicks.map(-> 1).merge(minusClicks.map(-> -1))
+      <pre><code class="javascript">
+        var inc = plusClicks.map(function() { return 1; });
+        var dec = minusClicks.map(function() { return -1; });
+        var change = plus.merge(minus);
       </code></pre>
     </div>
 
     <div class="slide">
-      <pre><code>
-        usernameOk = username.map((x)-> x.length > 0)
+      <pre><code class="javascript">
+        var usernameOk = username.map(function(x) {
+          return x.length > 0;
+        })
         username.zip(usernameOk)
       </code></pre>
     </div>
 
     <div class="slide">
-      <pre><code>
-        password.zipWith(passwordConfirmation, (l, r)-> l == r)
+      <pre><code class="javascript">
+        password.zipWith(passwordConfirmation,
+                         function(l, r) { return l == r; });
       </code></pre>
     </div>
 
     <div class="slide">
-      <pre><code>
-        usernameOk.and(passwordOk)
-        drivingLicensePresent.or(hasCar.not())
+      <pre><code class="javascript">
+        usernameOk.and(passwordOk);
+        drivingLicensePresent.or(hasCar.not());
       </code></pre>
     </div>
 
     <div class="slide">
-      <pre><code>
-        ajaxInProcess.takeUntil(ajaxResponse)
+      <pre><code class="javascript">
+        ajaxInProcess.takeUntil(ajaxResponse);
       </code></pre>
     </div>
 
     <div class="slide">
-      <pre><code>
-        username.debounce(500)
+      <pre><code class="javascript">
+        username.debounce(500);
       </code></pre>
     </div>
 
@@ -230,28 +245,32 @@
     </div>
 
     <div class="slide">
-      <pre><code>
+      <pre><code class="ruby">
         users.flat_map { |u| u.comments }
       </code></pre>
     </div>
 
 
     <div class="slide">
-      <pre><code>
-        listenTo.flatMap ([source, object])->
-          if source == "dom"
-            Jnoid.fromDOM($(object), "click")
-          else if source == "ajax"
-            Jnoid.fromPromise($.ajax(object))
-          else
-            Jnoid.unit()
+      <pre><code class="javascript">
+        listenTo.flatMap(function(target) {
+          if (target.source == "dom") {
+            return Jnoid.fromDOM($(target.object), "click");
+          } else if (target.source == "ajax") {
+            return Jnoid.fromPromise($.ajax(target.object));
+          } else {
+            return Jnoid.unit();
+          }
+        }
       </code></pre>
     </div>
 
     <div class="slide">
-      <pre><code>
-        requests = usernames.map((u)-> "/check-username/" + u)
-        requests.flatMapLatest($.ajax)
+      <pre><code class="javascript">
+        requests = usernames.map(function(u) {
+          return { url: "/check-username/" + u; }
+        });
+        requests.flatMapLatest($.ajax);
       </code></pre>
     </div>
 
