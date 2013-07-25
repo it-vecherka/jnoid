@@ -40,14 +40,14 @@ We represent signal values as instances of `Maybe` monad.
       isEmpty: -> false
       toArray: -> [@value]
 
-    class NoneClass extends Maybe
+    None = new class extends Maybe
       getOrElse: (value) -> value
       filter: -> None
       map: -> None
       isEmpty: -> true
       toArray: -> []
 
-    None = new NoneClass
+
 
 Exports
 -------
