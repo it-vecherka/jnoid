@@ -15,8 +15,9 @@ time-varying value, both of which you can subscribe on.
 EventStream
 -----------
 
-We represent event values as instances of Maybe monad. To know about it more,
-see section Maybe below.
+We represent event values as instances of `Maybe` monad. To know about it more,
+see section Maybe below. `None` in this case will be thought as the "End of
+stream".
 
 Class `EventStream` will be determined via a `subscribe` function.
 
@@ -48,14 +49,17 @@ We represent signal values as instances of `Maybe` monad.
       isEmpty: -> true
       toArray: -> []
 
+Type aliases for events:
 
+    [Event, Fire, Stop] = [Maybe, Some, None]
 
 Exports
 -------
 
 We now need to make our objects usable outside:
 
-    for name, value of {EventStream, Maybe, Some, None}
+    for name, value of {EventStream, Maybe, Some, None,
+                                     Event, Fire, Stop}
       Jnoid[name] = value
 
     if define?.amd
