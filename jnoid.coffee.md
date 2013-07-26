@@ -25,6 +25,21 @@ function should receive a subscriber or sink function as an argument and call
 it whenever event exists.  This enables push semantics for `EventStream`.
 
     class EventStream
+      constructor: (@subscribe)->
+
+      @sequentially: (delay, values)->
+        new EventStream (sink)->
+          schedule = (xs) ->
+            if empty xs
+              sink Stop
+            else
+              setTimeout (-> push xs), delay
+          push = (xs) ->
+            reply = sink new Fire (head xs)
+            unless reply == Stop
+              schedule (tail xs)
+          schedule values
+
 
 Helpers
 -------
@@ -53,6 +68,14 @@ We represent signal values as instances of `Maybe` monad.
 Type aliases for events:
 
     [Event, Fire, Stop] = [Maybe, Some, None]
+
+### Our small underscore
+
+We need some simple helper functions.
+
+    empty = (xs) -> xs.length == 0
+    head = (xs) -> xs[0]
+    tail = (xs) -> xs[1...xs.length]
 
 Exports
 -------
