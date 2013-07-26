@@ -100,10 +100,6 @@ In our case, `once` is `unit`:
 
       @unit: @once
 
-### flatMap
-
-Once we have unit, we should definitely have `flatMap`. `flatMap` takes function that accepts a value from events and spawns a stream. `flatMap` returns a stream that pushes events from that stream. Once a new event appears on that stream, 
-
 ### Constructors
 
 `fromBinder` just adds a syntax sugar for us to easily define new constructors.
