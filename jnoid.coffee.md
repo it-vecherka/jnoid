@@ -12,34 +12,62 @@ The core idea is having an abstraction of `EventStream` which is a discrete
 sequence of values and an abstraction of a `Signal` which is a continous
 time-varying value, both of which you can subscribe on.
 
+Observable
+----------
+
+The point is that we can abstract from both of them and define a common
+behavior, calling it `Observable`.
+
+We represent event values as instances of `Event` monad. It is semantically
+equivalent to famous `Maybe` monad, and in fact is just a type alias. To know
+about it more, see section Maybe below. Aliases are `Event` for `Maybe`, `Fire`
+for `Some` and `Stop` for `End`.
+
+Class `Observable` will be determined via a `subscribe` function. This function
+should receive a subscriber or sink function as an argument and call it
+whenever event is fired. This enables push semantics for `EventStream` and
+`Signal`.
+
+    class Observable
+      constructor: (subscribe)->
+        @subscribe = @dispatched subscribe
+
+      dispatched: -> throw "Don't instantiate Observable, please"
+
 EventStream
 -----------
 
-We represent event values as instances of `Maybe` monad. To know about it more,
-see section Maybe below. `None` in this case will be thought as the "End of
-stream". To do this we'll have type aliases `Event`, `Fire` and `Stop` to
-`Maybe` types.
+Class `EventStream` represents a disrete sequence of values, coupled with time.
+So it uses the appropriate dispatcher to do it.
 
-Class `EventStream` will be determined via a `subscribe` function. This
-function should receive a subscriber or sink function as an argument and call
-it whenever event exists.  This enables push semantics for `EventStream`.
+`Dispatcher` activates the listeners when a first sink is added and then just
+adds them. On each event it just pushes it to all sinks.
 
-    class EventStream
-      constructor: (subscribe)->
-        @subscribe = new Dispatcher(subscribe).subscribe
+    class EventStream extends Observable
+      class Dispatcher
+        constructor: (subscribe, handler) ->
+          subscribe ?= (event) ->
+          sinks = []
+          @push = (event) =>
+            sink(event) for sink in sinks
+          handler ?= (event) -> @push event
+          @handler = (event) => handler.apply(this, [event])
+          @subscribe = (sink) =>
+            sinks.push(sink)
+            unsubSelf = subscribe @handler if sinks.length == 1
+            ->
+              remove(sink, sinks)
+              unsubSelf?() unless any sinks
 
-      @newInstance: (args...)-> new EventStream args...
-      newInstance: (args...)-> new EventStream args...
-
-The dispatcher wraps subscribe function in a way that only the first subscriber
-activates the trail. See appropriate section for more details.
+      dispatched: (subscribe, handler)->
+        new Dispatcher(subscribe, handler).subscribe
 
 The basic ways to build streams are `never` and `once`.
 
       @never: ->
-        @newInstance (sink) -> sink Stop
+        new EventStream (sink) -> sink Stop
       @once: (value)->
-        @newInstance (sink) ->
+        new EventStream (sink) ->
           sink new Fire value
           sink Stop
 
@@ -47,12 +75,16 @@ In our case, `once` is `unit`:
 
       @unit: @once
 
+### flatMap
+
+Once we have unit, we should definitely have `flatMap`. `flatMap` takes function that accepts a value from events and spawns a stream. `flatMap` returns a stream that pushes events from that stream. Once a new event appears on that stream, 
+
 ### Constructors
 
 `fromBinder` just adds a syntax sugar for us to easily define new constructors.
 
       @fromBinder: (binder, transform = id) ->
-        @newInstance (sink) ->
+        new EventStream (sink) ->
           unbinder = binder (args...) ->
             events = toArray transform args...
             for event in map toEvent, events
@@ -87,23 +119,6 @@ respectively within given interval.
 Dispatcher
 ----------
 
-`Dispatcher` activates the listeners when a first sink is added and then just
-adds them.
-
-    class Dispatcher
-      constructor: (subscribe, handleEvent) ->
-        subscribe ?= (event) ->
-        sinks = []
-        @push = (event) =>
-          sink(event) for sink in sinks
-        handleEvent ?= (event) -> @push event
-        @handleEvent = (event) => handleEvent.apply(this, [event])
-        @subscribe = (sink) =>
-          sinks.push(sink)
-          unsubSelf = subscribe @handleEvent if sinks.length == 1
-          ->
-            remove(sink, sinks)
-            unsubSelf?() unless any sinks
 
 Helpers
 -------
