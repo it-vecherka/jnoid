@@ -17,7 +17,8 @@ EventStream
 
 We represent event values as instances of `Maybe` monad. To know about it more,
 see section Maybe below. `None` in this case will be thought as the "End of
-stream".
+stream". To do this we'll have type aliases `Event`, `Fire` and `Stop` to
+`Maybe` types.
 
 Class `EventStream` will be determined via a `subscribe` function. This
 function should receive a subscriber or sink function as an argument and call
