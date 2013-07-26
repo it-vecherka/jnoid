@@ -13,6 +13,10 @@ describe 'Maybe', ->
       assert.deepEqual new Some(5).filter((x)-> x > 0), new Some(5)
       assert.deepEqual new Some(5).filter((x)-> x < 0), None
 
+    it 'tests', ->
+      assert.ok new Some(5).test((x)-> x > 0)
+      assert.notOk new Some(5).test((x)-> x < 0)
+
     it 'applies map', ->
       assert.deepEqual new Some(5).map((x)-> x + 10), new Some(15)
 
@@ -28,6 +32,9 @@ describe 'Maybe', ->
 
     it 'skips filter', ->
       assert.deepEqual None.filter((x)-> x > 0), None
+
+    it 'passes test', ->
+      assert.ok None.test((x)-> x > 0)
 
     it 'skips map', ->
       assert.deepEqual None.map((x)-> x + 10), None

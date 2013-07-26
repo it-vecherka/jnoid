@@ -28,11 +28,33 @@ function should receive a subscriber or sink function as an argument and
 call it whenever event is fired. This enables push semantics for `Stream`
 and `Box`.
 
+There are two ways to unsubscribe. First is to call function that subscribe
+returns. Second is return `Reply.stop` from event listener.
+
+    Reply =
+      stop: "<stop>"
+      more: "<more>"
+
     class Observable
       constructor: (subscribe)->
         @subscribe = @dispatched subscribe
 
-      dispatched: -> throw "Don't instantiate Observable, please"
+      dispatched: fail
+      newInstance: fail
+
+We can now define basic transforms. Start with `map` and `filter`. We can
+see common pattern there, it's abstracted in `withHandler`.
+
+      withHandler: (handler)->
+        @newInstance @dispatched(@subscribe, handler)
+
+      map: (f)->
+        @withHandler (event)->
+          @push event.map(f)
+
+      filter: (f)->
+        @withHandler (event)->
+          if event.test(f) then @push event else Reply.more
 
 EventStream
 -----------
@@ -49,18 +71,21 @@ adds them. On each event it just pushes it to all sinks.
           subscribe ?= (event) ->
           sinks = []
           @push = (event) =>
-            sink(event) for sink in sinks
+            for sink in sinks
+              tap sink(event), (reply)->
+                remove sink, sinks if reply == Reply.stop
           handler ?= (event) -> @push event
           @handler = (event) => handler.apply(this, [event])
           @subscribe = (sink) =>
             sinks.push(sink)
             unsubSelf = subscribe @handler if sinks.length == 1
             ->
-              remove(sink, sinks)
+              remove sink, sinks
               unsubSelf?() unless any sinks
 
       dispatched: (subscribe, handler)->
         new Dispatcher(subscribe, handler).subscribe
+      newInstance: (args...)-> new Stream args...
 
 The basic ways to build streams are `never` and `once`.
 
@@ -88,8 +113,8 @@ Once we have unit, we should definitely have `flatMap`. `flatMap` takes function
           unbinder = binder (args...) ->
             events = toArray transform args...
             for event in map toEvent, events
-              sink(event)
-              unbinder() if event == Stop
+              tap sink(event), (reply)->
+                unbinder() if event == Stop or reply == Reply.stop
 
 `fromPoll` polls a function within given interval.
 
@@ -116,10 +141,6 @@ respectively within given interval.
       @later: (delay, value)->
         @sequentially(delay, [value])
 
-Dispatcher
-----------
-
-
 Helpers
 -------
 
@@ -134,6 +155,8 @@ We represent signal values as instances of `Maybe` monad.
       getOrElse: -> @value
       filter: (f) ->
         if f @value then new Some(@value) else None
+      test: (f) ->
+        f @value
       map: (f) ->
         new Some(f @value)
       isEmpty: -> false
@@ -141,6 +164,7 @@ We represent signal values as instances of `Maybe` monad.
     None = new class extends Maybe
       getOrElse: (value) -> value
       filter: -> None
+      test: -> true
       map: -> None
       isEmpty: -> true
 
@@ -154,9 +178,16 @@ Type aliases for events:
 We need some simple helper functions.
 
     empty = (xs) -> xs.length == 0
+    fail = -> throw "method not implemented"
     head = (xs) -> xs[0]
     tail = (xs) -> xs[1...xs.length]
     map = (f, xs) -> f(x) for x in xs
+    tap = (x, f) ->
+      f(x)
+      x
+    remove = (x, xs) ->
+      i = xs.indexOf(x)
+      xs.splice(i, 1) if i >= 0
     toArray = (x) -> if x instanceof Array then x else [x]
 
 Exports
