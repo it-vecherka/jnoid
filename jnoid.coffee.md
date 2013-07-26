@@ -25,21 +25,85 @@ function should receive a subscriber or sink function as an argument and call
 it whenever event exists.  This enables push semantics for `EventStream`.
 
     class EventStream
-      constructor: (@subscribe)->
+      constructor: (subscribe)->
+        @subscribe = new Dispatcher(subscribe).subscribe
 
-      @sequentially: (delay, values)->
-        new EventStream (sink)->
-          schedule = (xs) ->
-            if empty xs
-              sink Stop
-            else
-              setTimeout (-> push xs), delay
-          push = (xs) ->
-            reply = sink new Fire (head xs)
-            unless reply == Stop
-              schedule (tail xs)
-          schedule values
+      @newInstance: (args...)-> new EventStream args...
+      newInstance: (args...)-> new EventStream args...
 
+The dispatcher wraps subscribe function in a way that only the first subscriber
+activates the trail. See appropriate section for more details.
+
+The basic ways to build streams are `never` and `once`.
+
+      @never: ->
+        @newInstance (sink) -> sink Stop
+      @once: (value)->
+        @newInstance (sink) ->
+          sink new Fire value
+          sink Stop
+
+In our case, `once` is `unit`:
+
+      @unit: @once
+
+### Constructors
+
+`fromBinder` just adds a syntax sugar for us to easily define new constructors.
+
+      @fromBinder: (binder, transform = id) ->
+        @newInstance (sink) ->
+          unbinder = binder (args...) ->
+            events = toArray transform args...
+            for event in map toEvent, events
+              sink(event)
+              unbinder() if event == Stop
+
+`fromPoll` polls a function within given interval.
+
+      @fromPoll: (delay, poll) ->
+        @fromBinder (handler) ->
+          i = setInterval(handler, delay)
+          -> clearInterval(i)
+        , poll
+
+`sequentially` and `later` send a fixed list of events or one event
+respectively within given interval.
+
+      @sequentially: (delay, list)->
+        index = 0
+        @fromPoll delay, ->
+          value = list[index++]
+          if index < list.length
+            value
+          else if index == list.length
+            [value, Stop]
+          else
+            Stop
+
+      @later: (delay, value)->
+          @sequentially(delay, [value])
+
+Dispatcher
+----------
+
+`Dispatcher` activates the listeners when a first sink is added and then just
+adds them.
+
+    class Dispatcher
+      constructor: (subscribe, handleEvent) ->
+        subscribe ?= (event) ->
+        sinks = []
+        @push = (event) =>
+          sink(event) for sink in sinks
+        handleEvent ?= (event) -> @push event
+        @handleEvent = (event) => handleEvent.apply(this, [event])
+        @subscribe = (sink) =>
+          sinks.push(sink)
+          unsubSelf = subscribe @handleEvent if sinks.length == 1
+          ->
+            remove(sink, sinks)
+            unsubSelf?() unless any sinks
 
 Helpers
 -------
@@ -68,6 +132,7 @@ We represent signal values as instances of `Maybe` monad.
 Type aliases for events:
 
     [Event, Fire, Stop] = [Maybe, Some, None]
+    toEvent = (x) -> if x instanceof Event then x else new Fire x
 
 ### Our small underscore
 
@@ -76,6 +141,8 @@ We need some simple helper functions.
     empty = (xs) -> xs.length == 0
     head = (xs) -> xs[0]
     tail = (xs) -> xs[1...xs.length]
+    map = (f, xs) -> f(x) for x in xs
+    toArray = (x) -> if x instanceof Array then x else [x]
 
 Exports
 -------

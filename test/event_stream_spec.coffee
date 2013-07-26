@@ -7,6 +7,13 @@ describe 'EventStream', ->
       EventStream.sequentially(10, [1, 2, 3]),
       done
 
+  it 'can be subscribed twice', (done)->
+    i = 0
+    donner = -> done() if ++i == 2
+    stream = EventStream.sequentially(10, [1, 2, 3])
+    expectEvents [1, 2, 3], stream, donner
+    setTimeout((-> expectEvents([2, 3], stream, donner)), 15)
+
 expectEvents = (expected, stream, done)->
   actual = []
   verify = ->
