@@ -205,3 +205,8 @@ We now need to make our objects usable outside:
       module.exports = Jnoid
     else
       @Jnoid = Jnoid
+
+Conclusion
+----------
+
+Have fun!

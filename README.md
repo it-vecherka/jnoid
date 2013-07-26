@@ -194,14 +194,19 @@ Exports
 -------
 
 We now need to make our objects usable outside:
+```coffeescript
+for name, value of {Stream, Maybe, Some, None,
+                            Event, Fire, Stop}
+  Jnoid[name] = value
 
-    for name, value of {Stream, Maybe, Some, None,
-                                Event, Fire, Stop}
-      Jnoid[name] = value
+if define?.amd
+  define [], -> Jnoid
+else if module?.exports
+  module.exports = Jnoid
+else
+  @Jnoid = Jnoid
+```
+Conclusion
+----------
 
-    if define?.amd
-      define [], -> Jnoid
-    else if module?.exports
-      module.exports = Jnoid
-    else
-      @Jnoid = Jnoid
+Have fun!
