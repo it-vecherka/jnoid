@@ -8,8 +8,8 @@ shorter and simpler.
 
     Jnoid = {}
 
-The core idea is having an abstraction of `EventStream` which is a discrete
-sequence of values and an abstraction of a `Signal` which is a continous
+The core idea is having an abstraction of `Stream` which is a discrete
+sequence of values and an abstraction of a `Box` which is a continous
 time-varying value, both of which you can subscribe on.
 
 Observable
@@ -23,10 +23,10 @@ equivalent to famous `Maybe` monad, and in fact is just a type alias. To know
 about it more, see section Maybe below. Aliases are `Event` for `Maybe`, `Fire`
 for `Some` and `Stop` for `End`.
 
-Class `Observable` will be determined via a `subscribe` function. This function
-should receive a subscriber or sink function as an argument and call it
-whenever event is fired. This enables push semantics for `EventStream` and
-`Signal`.
+Class `Observable` will be determined via a `subscribe` function. This
+function should receive a subscriber or sink function as an argument and
+call it whenever event is fired. This enables push semantics for `Stream`
+and `Box`.
 
     class Observable
       constructor: (subscribe)->
@@ -43,7 +43,7 @@ So it uses the appropriate dispatcher to do it.
 `Dispatcher` activates the listeners when a first sink is added and then just
 adds them. On each event it just pushes it to all sinks.
 
-    class EventStream extends Observable
+    class Stream extends Observable
       class Dispatcher
         constructor: (subscribe, handler) ->
           subscribe ?= (event) ->
@@ -65,9 +65,9 @@ adds them. On each event it just pushes it to all sinks.
 The basic ways to build streams are `never` and `once`.
 
       @never: ->
-        new EventStream (sink) -> sink Stop
+        new Stream (sink) -> sink Stop
       @once: (value)->
-        new EventStream (sink) ->
+        new Stream (sink) ->
           sink new Fire value
           sink Stop
 
@@ -84,7 +84,7 @@ Once we have unit, we should definitely have `flatMap`. `flatMap` takes function
 `fromBinder` just adds a syntax sugar for us to easily define new constructors.
 
       @fromBinder: (binder, transform = id) ->
-        new EventStream (sink) ->
+        new Stream (sink) ->
           unbinder = binder (args...) ->
             events = toArray transform args...
             for event in map toEvent, events
@@ -114,7 +114,7 @@ respectively within given interval.
             Stop
 
       @later: (delay, value)->
-          @sequentially(delay, [value])
+        @sequentially(delay, [value])
 
 Dispatcher
 ----------
@@ -164,8 +164,8 @@ Exports
 
 We now need to make our objects usable outside:
 
-    for name, value of {EventStream, Maybe, Some, None,
-                                     Event, Fire, Stop}
+    for name, value of {Stream, Maybe, Some, None,
+                                Event, Fire, Stop}
       Jnoid[name] = value
 
     if define?.amd
