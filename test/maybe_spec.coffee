@@ -1,5 +1,5 @@
 assert = require('chai').assert
-{Maybe, Just, Nothing} = require '../jnoid.coffee.md'
+{Maybe, Just, Wrong, Nothing} = require '../jnoid.coffee.md'
 
 describe 'Maybe', ->
   describe 'Just', ->
@@ -23,6 +23,28 @@ describe 'Maybe', ->
     it 'is not empty', ->
       assert.notOk new Just(5).isEmpty()
 
+  describe 'Wrong', ->
+    it 'is Maybe', ->
+      assert.instanceOf new Wrong(5), Maybe
+
+    it 'returns else on getOrElse', ->
+      assert.equal new Wrong(5).getOrElse(15), 15
+
+    it 'skips filter', ->
+      assert.deepEqual new Wrong(5).filter((x)-> x > 0), new Wrong(5)
+
+    it 'passes test', ->
+      assert.ok new Wrong(5).test((x)-> x < 0)
+
+    it 'skips map', ->
+      assert.deepEqual new Wrong(5).map((x)-> x + 10), new Wrong(5)
+
+    it 'is empty', ->
+      assert.ok new Wrong(5).isEmpty()
+
+    it 'gives error on demand', ->
+      assert.equal new Wrong(5).error, 5
+
   describe 'Nothing', ->
     it 'is Maybe', ->
       assert.instanceOf Nothing, Maybe
@@ -31,7 +53,7 @@ describe 'Maybe', ->
       assert.equal Nothing.getOrElse(15), 15
 
     it 'skips filter', ->
-      assert.deepEqual Nothing.filter((x)-> x > 0), Nothing
+      assert.deepEqual Nothing.filter((x)-> x < 0), Nothing
 
     it 'passes test', ->
       assert.ok Nothing.test((x)-> x > 0)

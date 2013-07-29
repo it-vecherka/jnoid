@@ -18,10 +18,10 @@ Observable
 The point is that we can abstract from both of them and define a common
 behavior, calling it `Observable`.
 
-We represent event values as instances of `Event` monad. It is semantically
-equivalent to famous `Maybe` monad, and in fact is just a type alias. To know
-about it more, see section Maybe below. Aliases are `Event` for `Maybe`, `Fire`
-for `Some` and `Stop` for `End`.
+We represent event values as instances of `Event` monad. To have it we'll take
+a regular `Maybe` and `Either`, mix them both and produce a
+`Maybe = Just x | Wrong y | Nothing` type, which we alias to
+`Event = Fire x | Error y | Stop`. See the appropriate section below.
 
 Class `Observable` will be determined via a `subscribe` function. This
 function should receive a subscriber or sink function as an argument and
@@ -133,6 +133,7 @@ respectively within given interval.
             [value, Stop]
           else
             Stop
+      getError: fail
 
       @later: (delay, value)->
         @sequentially(delay, [value])
@@ -142,31 +143,32 @@ Helpers
 
 ### Maybe
 
-We represent signal values as instances of `Maybe` monad.
+We'll slightly extend the `Maybe` idiom to support error values. Now it's a
+sum of `Maybe` and `Either` in some sence.
 
     class Maybe
 
     class Just extends Maybe
       constructor: (@value) ->
       getOrElse: -> @value
-      filter: (f) ->
-        if f @value then new Just(@value) else Nothing
-      test: (f) ->
-        f @value
-      map: (f) ->
-        new Just(f @value)
+      filter: (f) -> if @test(f) then @ else Nothing
+      test: (f) -> f @value
+      map: (f) -> new Just(f @value)
       isEmpty: -> false
 
-    Nothing = new class extends Maybe
-      getOrElse: (value) -> value
-      filter: -> Nothing
-      test: -> true
-      map: -> Nothing
+    class Wrong extends Maybe
+      constructor: (@error) ->
+      getOrElse: (some)-> some
+      filter: (f) -> @
+      test: (f) -> true
+      map: (f) -> @
       isEmpty: -> true
+
+    Nothing = new class extends Wrong
 
 Type aliases for events:
 
-    [Event, Fire, Stop] = [Maybe, Just, Nothing]
+    [Event, Fire, Error, Stop] = [Maybe, Just, Wrong, Nothing]
     toEvent = (x) -> if x instanceof Event then x else new Fire x
 
 ### Our small underscore
@@ -191,8 +193,8 @@ Exports
 
 We now need to make our objects usable outside:
 
-    for name, value of {Stream, Maybe, Just, Nothing,
-                                Event, Fire, Stop}
+    for name, value of {Stream, Maybe, Just, Wrong, Nothing,
+                                Event, Fire, Error, Stop}
       Jnoid[name] = value
 
     if define?.amd
