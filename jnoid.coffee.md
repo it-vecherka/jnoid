@@ -108,11 +108,11 @@ different `flatMap`s in our case.
       flatMapAll: (f)-> @flatMapGeneric(f, false)
       flatMapLast: (f)-> @flatMapGeneric(f, true)
 
-EventStream
+Stream
 -----------
 
-Class `EventStream` represents a disrete sequence of values, coupled with time.
-So it uses the appropriate dispatcher to do it.
+Class `Stream` represents a disrete sequence of values, coupled with time.  So
+it uses the appropriate dispatcher to do it.
 
 `Dispatcher` activates the listeners when a first sink is added and then just
 adds them. On each event it just pushes it to all sinks.
