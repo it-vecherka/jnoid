@@ -146,27 +146,27 @@ We represent signal values as instances of `Maybe` monad.
 
     class Maybe
 
-    class Some extends Maybe
+    class Just extends Maybe
       constructor: (@value) ->
       getOrElse: -> @value
       filter: (f) ->
-        if f @value then new Some(@value) else None
+        if f @value then new Just(@value) else Nothing
       test: (f) ->
         f @value
       map: (f) ->
-        new Some(f @value)
+        new Just(f @value)
       isEmpty: -> false
 
-    None = new class extends Maybe
+    Nothing = new class extends Maybe
       getOrElse: (value) -> value
-      filter: -> None
+      filter: -> Nothing
       test: -> true
-      map: -> None
+      map: -> Nothing
       isEmpty: -> true
 
 Type aliases for events:
 
-    [Event, Fire, Stop] = [Maybe, Some, None]
+    [Event, Fire, Stop] = [Maybe, Just, Nothing]
     toEvent = (x) -> if x instanceof Event then x else new Fire x
 
 ### Our small underscore
@@ -191,7 +191,7 @@ Exports
 
 We now need to make our objects usable outside:
 
-    for name, value of {Stream, Maybe, Some, None,
+    for name, value of {Stream, Maybe, Just, Nothing,
                                 Event, Fire, Stop}
       Jnoid[name] = value
 

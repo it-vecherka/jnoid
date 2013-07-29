@@ -1,43 +1,43 @@
 assert = require('chai').assert
-{Maybe, Some, None} = require '../jnoid.coffee.md'
+{Maybe, Just, Nothing} = require '../jnoid.coffee.md'
 
 describe 'Maybe', ->
-  describe 'Some', ->
+  describe 'Just', ->
     it 'is Maybe', ->
-      assert.instanceOf new Some(5), Maybe
+      assert.instanceOf new Just(5), Maybe
 
     it 'returns value on getOrElse', ->
-      assert.equal new Some(5).getOrElse(15), 5
+      assert.equal new Just(5).getOrElse(15), 5
 
     it 'applies filter', ->
-      assert.deepEqual new Some(5).filter((x)-> x > 0), new Some(5)
-      assert.deepEqual new Some(5).filter((x)-> x < 0), None
+      assert.deepEqual new Just(5).filter((x)-> x > 0), new Just(5)
+      assert.deepEqual new Just(5).filter((x)-> x < 0), Nothing
 
     it 'tests', ->
-      assert.ok new Some(5).test((x)-> x > 0)
-      assert.notOk new Some(5).test((x)-> x < 0)
+      assert.ok new Just(5).test((x)-> x > 0)
+      assert.notOk new Just(5).test((x)-> x < 0)
 
     it 'applies map', ->
-      assert.deepEqual new Some(5).map((x)-> x + 10), new Some(15)
+      assert.deepEqual new Just(5).map((x)-> x + 10), new Just(15)
 
     it 'is not empty', ->
-      assert.notOk new Some(5).isEmpty()
+      assert.notOk new Just(5).isEmpty()
 
-  describe 'None', ->
+  describe 'Nothing', ->
     it 'is Maybe', ->
-      assert.instanceOf None, Maybe
+      assert.instanceOf Nothing, Maybe
 
     it 'returns else on getOrElse', ->
-      assert.equal None.getOrElse(15), 15
+      assert.equal Nothing.getOrElse(15), 15
 
     it 'skips filter', ->
-      assert.deepEqual None.filter((x)-> x > 0), None
+      assert.deepEqual Nothing.filter((x)-> x > 0), Nothing
 
     it 'passes test', ->
-      assert.ok None.test((x)-> x > 0)
+      assert.ok Nothing.test((x)-> x > 0)
 
     it 'skips map', ->
-      assert.deepEqual None.map((x)-> x + 10), None
+      assert.deepEqual Nothing.map((x)-> x + 10), Nothing
 
     it 'is empty', ->
-      assert.ok None.isEmpty()
+      assert.ok Nothing.isEmpty()
