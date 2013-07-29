@@ -250,6 +250,12 @@ Once we have `unit`, we should definitely have `flatMap`. In our case,
 
       flatMap: (args...)-> @flatMapLast(args...)
 
+With this `flatMap` we can define a glorious `map2`, also known as `zipWith`
+for two boxes.
+
+      map2: (other, f)->
+        @flatMap (x)-> other.map (y)-> f(x, y)
+
 Helpers
 -------
 

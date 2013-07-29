@@ -65,9 +65,9 @@ describe "Box", ->
       stream.flatMap((x)-> Box.sequentially(8, [10*x, 100*x])),
       done
 
-  # it "map2 zips two boxes", (done)->
-  #   first = Box.sequentially(10, [1, 2])
-  #   second = Box.sequentially(15, [100, 200, 300])
-  #   h.expectValues [101, 102, 202, 302],
-  #     first.map2(second, (x, y) -> x + y),
-  #     done
+  it "map2 zips two boxes", (done)->
+    first = Box.sequentially(10, [1, 2])
+    second = Box.sequentially(15, [100, 200, 300])
+    h.expectValues [102, 202, 302],
+      first.map2(second, (x, y) -> x + y),
+      done
