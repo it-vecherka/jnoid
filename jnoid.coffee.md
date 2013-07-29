@@ -56,6 +56,58 @@ see common pattern there, it's abstracted in `withHandler`.
         @withHandler (event)->
           if event.test(f) then @push event else Reply.more
 
+The most powerful combinator in our case is `flatMap`. It accepts a function
+that turns each of the values in observable to a new observable. Then we can
+eigther collect all the events from the spawned childen, or when a new event
+occurs on root, unsubscribe all the children and listen to it. These will be
+different `flatMap`s in our case.
+
+      flatMapGeneric: (f, lastOnly) ->
+        root = this
+        @newInstance (sink) ->
+          children = []
+          rootStop = false
+          unsubRoot = ->
+          unsubChildren = ->
+            unsubChild() for unsubChild in children
+            children = []
+          unbind = ->
+            unsubChildren()
+            unsubRoot()
+          checkStop = ->
+            if rootStop and (children.length == 0)
+              sink Stop
+          spawner = (event) ->
+            if event == Stop
+              rootStop = true
+              checkStop()
+            else
+              unsubChildren() if lastOnly
+              if event instanceof Error
+                sink event
+              else
+                child = f event.value
+                unsubChild = undefined
+                childStopped = false
+                removeChild = ->
+                  remove(unsubChild, children) if unsubChild?
+                  checkStop()
+                handler = (event) ->
+                  if event == Stop
+                    removeChild()
+                    childStopped = true
+                    Reply.stop
+                  else
+                    tap sink(event), (reply)->
+                      unbind() if reply == Reply.stop
+                unsubChild = child.subscribe handler
+                children.push unsubChild if not childStopped
+          unsubRoot = root.subscribe(spawner)
+          unbind
+
+      flatMapAll: (f)-> @flatMapGeneric(f, false)
+      flatMapLast: (f)-> @flatMapGeneric(f, true)
+
 EventStream
 -----------
 
@@ -165,6 +217,7 @@ sum of `Maybe` and `Either` in some sence.
       isEmpty: -> true
 
     Nothing = new class extends Wrong
+      constructor: ->
 
 Type aliases for events:
 
@@ -176,6 +229,7 @@ Type aliases for events:
 We need some simple helper functions.
 
     empty = (xs) -> xs.length == 0
+    id = (x)-> x
     fail = -> throw "method not implemented"
     head = (xs) -> xs[0]
     tail = (xs) -> xs[1...xs.length]
@@ -186,6 +240,14 @@ We need some simple helper functions.
     remove = (x, xs) ->
       i = xs.indexOf(x)
       xs.splice(i, 1) if i >= 0
+    all = (xs, f = id) ->
+      for x in xs
+        return false if not f(x)
+      return true
+    any = (xs, f = id) ->
+      for x in xs
+        return true if f(x)
+      return false
     toArray = (x) -> if x instanceof Array then x else [x]
 
 Exports

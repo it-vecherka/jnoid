@@ -26,6 +26,18 @@ describe 'EventStream', ->
         Stream.sequentially(10, [1, 2, 3]).filter((x)-> x % 2 != 0 ),
         done
 
+    it 'flatMapAll collects all the values from spawned streams', (done)->
+      stream = Stream.sequentially(10, [1, 2, 3])
+      expectEvents [10, 100, 20, 200, 30, 300],
+        stream.flatMapAll((x)-> Stream.sequentially(8, [10*x, 100*x])),
+        done
+
+    it 'flatMapLast collects only the values from last spawned streams', (done)->
+      stream = Stream.sequentially(10, [1, 2, 3])
+      expectEvents [10, 20, 30, 300],
+        stream.flatMapLast((x)-> Stream.sequentially(8, [10*x, 100*x])),
+        done
+
 expectEvents = (expected, stream, done)->
   actual = []
   verify = ->
