@@ -256,6 +256,8 @@ for two boxes.
       map2: (other, f)->
         @flatMap (x)-> other.map (y)-> f(x, y)
 
+      zipWith: (args...)-> @map2(args...)
+
 Helpers
 -------
 
