@@ -139,18 +139,33 @@ adds them. On each event it just pushes it to all sinks.
         new Dispatcher(subscribe, handler).subscribe
       newInstance: (args...)-> new Stream args...
 
-The basic ways to build streams are `never` and `once`.
+The basic ways to build streams are `never`, `once` and `error`.
 
-      @never: ->
-        new Stream (sink) -> sink Stop
-      @once: (value)->
+      @fromList: (values)->
         new Stream (sink) ->
-          sink new Fire value
+          sink event for event in map toEvent, values
+          sink Stop
+
+      @never: -> @fromList []
+      @once: (value)-> @fromList [value]
+
+      @error: (error)->
+        new Stream (sink) ->
+          sink new Error(error)
           sink Stop
 
 In our case, `once` is `unit`:
 
       @unit: @once
+
+Once we have `unit`, we should definitely have `flatMap` or `bind`. In our case it's `flatMapAll`:
+
+      flatMap: (args...)-> @flatMapAll(args...)
+
+Having this we can easily have `merge`:
+
+      merge: (others...)-> Stream.fromList([@, others...]).flatten()
+      flatten: -> @flatMap(id)
 
 ### Constructors
 
@@ -189,6 +204,11 @@ respectively within given interval.
 
       @later: (delay, value)->
         @sequentially(delay, [value])
+
+Box
+---
+
+Class `Box` represents continuous value that changes with time. So it
 
 Helpers
 -------
