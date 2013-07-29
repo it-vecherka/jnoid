@@ -1,6 +1,6 @@
 assert = require('chai').assert
 h = require('./test_helpers')
-{Stream} = require '../jnoid.coffee.md'
+{Stream, Box} = require '../jnoid.coffee.md'
 
 describe 'EventStream', ->
   describe 'basics', ->
@@ -51,17 +51,17 @@ describe 'EventStream', ->
 
   describe 'combination', ->
     it 'merge merges streams', (done)->
-      first = Stream.sequentially(10, [1, 2, 3])
-      second = Stream.sequentially(13, [10, 20, 30])
-      third = Stream.sequentially(19, [100, 200, 300])
-      h.expectValues [1, 10, 100, 2, 20, 3, 200, 30, 300],
-        first.merge(second, third),
+      first = Stream.sequentially(5, [1, 2])
+      second = Stream.sequentially(15, [10, 20])
+      h.expectValues [1, 2, 10, 20],
+        first.merge(second),
         done
 
+describe "Box", ->
+  it "streams current value", (done)->
+    i = 0
+    donner = -> done() if ++i >= 2
+    box = Box.sequentially(10, [1, 2, 3])
+    h.expectValues [1, 2, 3], box, donner
+    setTimeout((-> h.expectValues([1, 2, 3], box, donner)), 15)
 
-# h.expectValues = (expected, stream, done)->
-#   actual = []
-#   verify = ->
-#     assert.deepEqual actual, expected
-#     actual = []
-#     done()

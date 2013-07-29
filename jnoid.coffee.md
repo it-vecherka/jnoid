@@ -40,6 +40,7 @@ returns. Second is return `Reply.stop` from event listener.
         @subscribe = @dispatched subscribe
 
       dispatched: fail
+      @newInstance: fail
       newInstance: fail
 
 We can now define basic transforms. Start with `map` and `filter`. We can
@@ -49,12 +50,10 @@ see common pattern there, it's abstracted in `withHandler`.
         @newInstance @dispatched(@subscribe, handler)
 
       map: (f)->
-        @withHandler (event)->
-          @push event.map(f)
+        @withHandler (event)-> @push event.map(f)
 
       filter: (f)->
-        @withHandler (event)->
-          if event.test(f) then @push event else Reply.more
+        @withHandler (event)-> if event.test(f) then @push event else Reply.more
 
 The most powerful combinator in our case is `flatMap`. It accepts a function
 that turns each of the values in observable to a new observable. Then we can
@@ -108,71 +107,12 @@ different `flatMap`s in our case.
       flatMapAll: (f)-> @flatMapGeneric(f, false)
       flatMapLast: (f)-> @flatMapGeneric(f, true)
 
-Stream
------------
-
-Class `Stream` represents a disrete sequence of values, coupled with time.  So
-it uses the appropriate dispatcher to do it.
-
-`Dispatcher` activates the listeners when a first sink is added and then just
-adds them. On each event it just pushes it to all sinks.
-
-    class Stream extends Observable
-      class Dispatcher
-        constructor: (subscribe, handler) ->
-          subscribe ?= (event) ->
-          sinks = []
-          @push = (event) =>
-            for sink in sinks
-              tap sink(event), (reply)->
-                remove sink, sinks if reply == Reply.stop
-          handler ?= (event) -> @push event
-          @handler = (event) => handler.apply(this, [event])
-          @subscribe = (sink) =>
-            sinks.push(sink)
-            unsubSelf = subscribe @handler if sinks.length == 1
-            ->
-              remove sink, sinks
-              unsubSelf?() unless any sinks
-
-      dispatched: (subscribe, handler)->
-        new Dispatcher(subscribe, handler).subscribe
-      newInstance: (args...)-> new Stream args...
-
-The basic ways to build streams are `never`, `once` and `error`.
-
-      @fromList: (values)->
-        new Stream (sink) ->
-          sink event for event in map toEvent, values
-          sink Stop
-
-      @never: -> @fromList []
-      @once: (value)-> @fromList [value]
-
-      @error: (error)->
-        new Stream (sink) ->
-          sink new Error(error)
-          sink Stop
-
-In our case, `once` is `unit`:
-
-      @unit: @once
-
-Once we have `unit`, we should definitely have `flatMap` or `bind`. In our case it's `flatMapAll`:
-
-      flatMap: (args...)-> @flatMapAll(args...)
-
-Having this we can easily have `merge`:
-
-      merge: (others...)-> Stream.fromList([@, others...]).flatten()
-      flatten: -> @flatMap(id)
-
 ### Constructors
 
 `fromBinder` just adds a syntax sugar for us to easily define new constructors.
 
       @fromBinder: (binder, transform = id) ->
-        new Stream (sink) ->
+        @newInstance (sink) ->
           unbinder = binder (args...) ->
             events = toArray transform args...
             for event in map toEvent, events
@@ -205,10 +145,92 @@ respectively within given interval.
       @later: (delay, value)->
         @sequentially(delay, [value])
 
+
+Stream
+------
+
+Class `Stream` represents a disrete sequence of values, coupled with time.  So
+it uses the appropriate dispatcher to do it.
+
+`Dispatcher` activates the listeners when a first sink is added and then just
+adds them. On each event it just pushes it to all sinks.
+
+    class Dispatcher
+      constructor: (subscribe, handler) ->
+        subscribe ?= (event) ->
+        sinks = []
+        @push = (event) =>
+          for sink in sinks
+            tap sink(event), (reply)->
+              remove sink, sinks if reply == Reply.stop
+        handler ?= (event) -> @push event
+        @handler = (event) => handler.apply(this, [event])
+        @subscribe = (sink) =>
+          sinks.push(sink)
+          unsubSelf = subscribe @handler if sinks.length == 1
+          ->
+            remove sink, sinks
+            unsubSelf?() unless any sinks
+
+    class Stream extends Observable
+      dispatched: (subscribe, handler)->
+        new Dispatcher(subscribe, handler).subscribe
+      newInstance: (args...)-> new Stream args...
+      @newInstance: (args...)-> new Stream args...
+
+The basic ways to build streams are `never`, `once` and `error`.
+
+      @fromList: (values)->
+        new Stream (sink) ->
+          sink event for event in map toEvent, values
+          sink Stop
+
+      @never: -> @fromList []
+      @once: (value)-> @fromList [value]
+
+      @error: (error)->
+        new Stream (sink) ->
+          sink new Error(error)
+          sink Stop
+
+In our case, `once` is `unit`:
+
+      @unit: @once
+
+Once we have `unit`, we should definitely have `flatMap` or `bind`. In our case it's `flatMapAll`:
+
+      flatMap: (args...)-> @flatMapAll(args...)
+
+Having this we can easily have `merge`:
+
+      merge: (others...)-> Stream.fromList([@, others...]).flatten()
+      flatten: -> @flatMap(id)
+
 Box
 ---
 
-Class `Box` represents continuous value that changes with time. So it
+Class `Box` represents continuous value that changes with time. So it uses a
+slightly tweaked dispatcher.
+
+    class BoxDispatcher extends Dispatcher
+      constructor: (subscribe, handler) ->
+        super subscribe, handler
+        current = Nothing
+        push = @push
+        subscribe = @subscribe
+
+        @push = (event) =>
+          event.map((x) -> current = new Just x)
+          push.apply(this, [event])
+        @subscribe = (sink) =>
+          tap current.map((v)-> sink new Fire v), (reply)->
+            subscribe.apply(@, [sink]) unless reply.getOrElse(Reply.more) == Reply.stop
+
+    class Box extends Observable
+      dispatched: (subscribe, handler)->
+        new BoxDispatcher(subscribe, handler).subscribe
+      newInstance: (args...)-> new Box args...
+      @newInstance: (args...)-> new Box args...
 
 Helpers
 -------
@@ -275,8 +297,8 @@ Exports
 
 We now need to make our objects usable outside:
 
-    for name, value of {Stream, Maybe, Just, Wrong, Nothing,
-                                Event, Fire, Error, Stop}
+    for name, value of {Stream, Box, Event, Fire, Error, Stop,
+                                     Maybe, Just, Wrong, Nothing}
       Jnoid[name] = value
 
     if define?.amd
