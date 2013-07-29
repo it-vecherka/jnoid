@@ -223,14 +223,32 @@ slightly tweaked dispatcher.
           event.map((x) -> current = new Just x)
           push.apply(this, [event])
         @subscribe = (sink) =>
-          tap current.map((v)-> sink new Fire v), (reply)->
-            subscribe.apply(@, [sink]) unless reply.getOrElse(Reply.more) == Reply.stop
+          reply = current.map((v)-> sink new Fire v)
+          if reply.getOrElse(Reply.more) == Reply.stop
+            nop
+          else
+            subscribe.apply(@, [sink])
 
     class Box extends Observable
       dispatched: (subscribe, handler)->
         new BoxDispatcher(subscribe, handler).subscribe
       newInstance: (args...)-> new Box args...
       @newInstance: (args...)-> new Box args...
+
+The basic ways to build box is `always`.
+
+      @error: (value)->
+        new Box (sink) ->
+          sink new Fire value
+
+In our case `always` is `unit`.
+
+      @unit: @once
+
+Once we have `unit`, we should definitely have `flatMap`. In our case,
+`flatMap` is `flatMapLast`.
+
+      flatMap: (args...)-> @flatMapLast(args...)
 
 Helpers
 -------
