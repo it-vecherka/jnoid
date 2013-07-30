@@ -114,7 +114,7 @@ The basic ways to build an observable are `nothing`, `unit` and `error`. In
 they mean `empty`, `always` and `error`.
 
       @fromList: (values, wrapper = toEvent)->
-        new Stream (sink) ->
+        @newInstance (sink) ->
           sink event for event in map wrapper, values
           sink Stop
 
@@ -157,7 +157,6 @@ respectively within given interval.
 
       @later: (delay, value)->
         @interval(delay, [value])
-
 
 Stream
 ------
@@ -244,7 +243,22 @@ for two boxes.
       map2: (other, f)->
         @flatMap (x)-> other.map (y)-> f(x, y)
 
-      zipWith: (args...)-> @map2(args...)
+Having this, `zipWith` is easy:
+
+      @sequence: (boxes)->
+        foldl boxes, @unit([]), (acc, box)->
+          acc.map2 box, (memo, value)->
+            tap copyArray(memo), (newMemo)-> newMemo.push(value)
+      @zipWith: (boxes, f)->
+        @sequence(boxes).map uncurry f
+      zipWith: (others..., f)->
+        Box.zipWith [@, others...], f
+
+Helpful would be to define boolean algebra over boxes:
+
+      and: (others...)-> @zipWith others..., (a, b)-> a && b
+      or: (others...)-> @zipWith others..., (a, b)-> a || b
+      not: -> @map (x)-> !x
 
 Helpers
 -------
@@ -291,7 +305,12 @@ We need some simple helper functions.
     fail = -> throw "method not implemented"
     head = (xs) -> xs[0]
     tail = (xs) -> xs[1...xs.length]
+    uncurry = (f) -> (args)-> f(args...)
     map = (f, xs) -> f(x) for x in xs
+    foldl = (xs, seed, f) ->
+      for x in xs
+        seed = f(seed, x)
+      seed
     tap = (x, f) ->
       f(x)
       x
@@ -306,6 +325,7 @@ We need some simple helper functions.
       for x in xs
         return true if f(x)
       return false
+    copyArray = (a)-> a.slice()
     toArray = (x) -> if x instanceof Array then x else [x]
 
 Exports
