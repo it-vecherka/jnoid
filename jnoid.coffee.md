@@ -209,6 +209,9 @@ we can supply optional inital value.
           @subscribe (event)-> sink event
       changes: -> @
 
+We could also define a new stream with initial value merged to the beginning,
+but the current code looks trivial.
+
 Box
 ---
 
