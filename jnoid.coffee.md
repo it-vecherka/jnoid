@@ -196,7 +196,8 @@ For this class we can have `flatMap` aka `bind`. In our case it's `flatMapAll`:
 
 Having this we can easily have `merge`:
 
-      merge: (others...)-> Stream.fromList([@, others...]).flatten()
+      merge: (others...)->
+        Stream.fromList(map method("changes"), [@, others...]).flatten()
       flatten: -> @flatMap(id)
 
 ### Cross-methods
@@ -217,14 +218,10 @@ but the current code is simple enough.
 
 All proxy methods are trivial.
 
-      zipWith: (others..., f)->
-        @box().zipWith((other.box() for other in others)..., f)
-      and: (others...)->
-        @box().and((other.box() for other in others)..., f)
-      or: (others...)->
-        @box().or((other.box() for other in others)..., f)
-      not: ->
-        @box().not()
+      zipWith: (others..., f)-> @box().zipWith(others..., f)
+      and: (others...)-> @box().and(others..., f)
+      or: (others...)-> @box().or(others..., f)
+      not: -> @box().not()
 
 Box
 ---
@@ -268,7 +265,7 @@ With this `flatMap` we can define a glorious `map2`, also known as `zipWith`
 for two boxes.
 
       map2: (other, f)->
-        @flatMap (x)-> other.map (y)-> f(x, y)
+        @flatMap (x)-> other.box().map (y)-> f(x, y)
 
 Having this, `zipWith` is easy:
 
@@ -298,8 +295,7 @@ To convert `Box` into `Stream` we take it's changes.
 
 Here are the proxy methods:
 
-      merge: (others...)->
-        @changes().merge((other.changes() for other in others)...)
+      merge: (others...)-> @changes().merge(others...)
 
 Helpers
 -------
@@ -343,7 +339,8 @@ Type aliases for events:
 
 We need some simple helper functions.
 
-    empty = (xs) -> xs.length == 0
+    empty = (xs)-> xs.length == 0
+    method = (meth)-> (obj)-> obj[meth]()
     nop = ->
     id = (x)-> x
     fail = -> throw "method not implemented"
