@@ -109,7 +109,21 @@ different `flatMap`s in our case.
 
 ### Constructors
 
-`fromBinder` just adds a syntax sugar for us to easily define new constructors.
+The basic ways to build an observable are `nothing`, `unit` and `error`. In
+`Stream` semantics they mean `never`, `once` and `error`, in `Box` semantics
+they mean `empty`, `always` and `error`.
+
+      @fromList: (values, wrapper = toEvent)->
+        new Stream (sink) ->
+          sink event for event in map wrapper, values
+          sink Stop
+
+      @nothing: -> @fromList []
+      @unit: (value)-> @fromList [value]
+      @error: (value)-> @fromList [value], toError
+
+`fromBinder` just adds a syntax sugar for us to easily define more
+sophisticated constructors.
 
       @fromBinder: (binder, transform = id) ->
         @newInstance (sink) ->
@@ -119,20 +133,20 @@ different `flatMap`s in our case.
               tap sink(event), (reply)->
                 unbinder() if event == Stop or reply == Reply.stop
 
-`fromPoll` polls a function within given interval.
+`poll` polls a function within given interval.
 
-      @fromPoll: (delay, poll) ->
+      @poll: (delay, poll) ->
         @fromBinder (handler) ->
           i = setInterval(handler, delay)
           -> clearInterval(i)
         , poll
 
-`sequentially` and `later` send a fixed list of events or one event
+`interval` and `later` send a fixed list of events or one event
 respectively within given interval.
 
-      @sequentially: (delay, list)->
+      @interval: (delay, list)->
         index = 0
-        @fromPoll delay, ->
+        @poll delay, ->
           value = list[index++]
           if index < list.length
             value
@@ -143,7 +157,7 @@ respectively within given interval.
       getError: fail
 
       @later: (delay, value)->
-        @sequentially(delay, [value])
+        @interval(delay, [value])
 
 
 Stream
@@ -178,26 +192,7 @@ adds them. On each event it just pushes it to all sinks.
       newInstance: (args...)-> new Stream args...
       @newInstance: (args...)-> new Stream args...
 
-The basic ways to build streams are `never`, `once` and `error`.
-
-      @fromList: (values)->
-        new Stream (sink) ->
-          sink event for event in map toEvent, values
-          sink Stop
-
-      @never: -> @fromList []
-      @once: (value)-> @fromList [value]
-
-      @error: (error)->
-        new Stream (sink) ->
-          sink new Error(error)
-          sink Stop
-
-In our case, `once` is `unit`:
-
-      @unit: @once
-
-Once we have `unit`, we should definitely have `flatMap` or `bind`. In our case it's `flatMapAll`:
+For this class we can have `flatMap` aka `bind`. In our case it's `flatMapAll`:
 
       flatMap: (args...)-> @flatMapAll(args...)
 
@@ -218,13 +213,18 @@ slightly tweaked dispatcher.
         current = Nothing
         push = @push
         subscribe = @subscribe
+        stopped = false
 
         @push = (event) =>
           event.map((x) -> current = new Just x)
+          stopped = true if event == Stop
           push.apply(this, [event])
         @subscribe = (sink) =>
           reply = current.map((v)-> sink new Fire v)
           if reply.getOrElse(Reply.more) == Reply.stop
+            nop
+          else if stopped
+            sink Stop
             nop
           else
             subscribe.apply(@, [sink])
@@ -235,18 +235,7 @@ slightly tweaked dispatcher.
       newInstance: (args...)-> new Box args...
       @newInstance: (args...)-> new Box args...
 
-The basic ways to build box is `always`.
-
-      @error: (value)->
-        new Box (sink) ->
-          sink new Fire value
-
-In our case `always` is `unit`.
-
-      @unit: @once
-
-Once we have `unit`, we should definitely have `flatMap`. In our case,
-`flatMap` is `flatMapLast`.
+For this class we can have `flatMap` aka `bind`. In our case it's `flatMapAll`:
 
       flatMap: (args...)-> @flatMapLast(args...)
 
@@ -291,12 +280,14 @@ Type aliases for events:
 
     [Event, Fire, Error, Stop] = [Maybe, Just, Wrong, Nothing]
     toEvent = (x) -> if x instanceof Event then x else new Fire x
+    toError = (x) -> if x instanceof Event then x else new Error x
 
 ### Our small underscore
 
 We need some simple helper functions.
 
     empty = (xs) -> xs.length == 0
+    nop = ->
     id = (x)-> x
     fail = -> throw "method not implemented"
     head = (xs) -> xs[0]

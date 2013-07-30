@@ -5,8 +5,8 @@ module.exports =
   expectEvents: (expected, stream, done)->
     actual = []
     verify = ->
-      assert.deepEqual actual, expected
-      actual = []
+      [snapshotActual, actual] = [actual, []]
+      assert.deepEqual snapshotActual, expected
       done()
     stream.subscribe (event)->
       if event.isEmpty()
