@@ -199,6 +199,15 @@ Having this we can easily have `merge`:
       merge: (others...)-> Stream.fromList([@, others...]).flatten()
       flatten: -> @flatMap(id)
 
+Stream and Box can be easily turned into each other. To convert stream into box
+we can supply optional inital value.
+
+      box: (initial = Nothing)->
+        initial = toMaybe(initial)
+        new Box (sink)=>
+          sink initial unless initial.isEmpty()
+          @subscribe (event)-> sink event
+
 Box
 ---
 
@@ -277,6 +286,7 @@ sum of `Maybe` and `Either` in some sence.
       test: (f) -> f @value
       map: (f) -> new Just(f @value)
       isEmpty: -> false
+      inspect: -> "Just #{@value}"
 
     class Wrong extends Maybe
       constructor: (@error) ->
@@ -285,9 +295,11 @@ sum of `Maybe` and `Either` in some sence.
       test: (f) -> true
       map: (f) -> @
       isEmpty: -> true
+      inspect: -> "Wrong #{@error}"
 
     Nothing = new class extends Wrong
       constructor: ->
+      inspect: -> "Nothing"
 
 Type aliases for events:
 
@@ -327,6 +339,8 @@ We need some simple helper functions.
       return false
     copyArray = (a)-> a.slice()
     toArray = (x) -> if x instanceof Array then x else [x]
+    toMaybe = (x) ->
+      if x instanceof Maybe then x else new Just x
 
 Exports
 -------

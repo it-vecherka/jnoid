@@ -48,6 +48,23 @@ describe 'EventStream', ->
         first.merge(second),
         done
 
+  describe 'box', ->
+    it 'tranforms stream into box', (done)->
+      stream = Stream.interval(10, [1, 2])
+      box = stream.box()
+      assert.instanceOf box, Box
+      h.expectValues [1, 2],
+        box,
+        done
+
+    it 'optionally appends initial value', (done)->
+      stream = Stream.interval(10, [1, 2])
+      box = stream.box(100)
+      assert.instanceOf box, Box
+      h.expectValues [100, 1, 2],
+        box,
+        done
+
 describe "Box", ->
   it "streams current value", (done)->
     i = 0
