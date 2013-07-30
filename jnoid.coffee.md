@@ -289,8 +289,8 @@ but the current code is simple enough.
 All proxy methods are trivial.
 
       zipWith: (others..., f)-> @box().zipWith(others..., f)
-      and: (others...)-> @box().and(others..., f)
-      or: (others...)-> @box().or(others..., f)
+      and: (others...)-> @box().and(others...)
+      or: (others...)-> @box().or(others...)
       not: -> @box().not()
 
 Box

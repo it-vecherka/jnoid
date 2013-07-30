@@ -70,7 +70,7 @@
 
     var validateAjax = function(params) {
       return Jnoid.Stream.fromPromise($.ajax(params)).
-        prepend(Messages.checking).
+        box(Messages.checking).
         map(function () { return Messages.good }).
         recover(function (e) { return e.responseText } )
     }
