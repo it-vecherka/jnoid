@@ -51,9 +51,9 @@
 
   <script type="text/javascript" charset="utf-8">
     var textFieldValue = function(textField) {
-      return Jnoid.Signal.fromDOM(textField, "keyup input").
+      return Jnoid.Stream.fromDOM(textField, "keyup input").
                    map(function (e) { return $(e.target).val() }).
-                   prepend($(textField).val()).
+                   box($(textField).val()).
                    skipDuplicates();
     }
 
@@ -69,8 +69,8 @@
     var nonEmpty = function (x) { return x.length > 0 }
 
     var validateAjax = function(params) {
-      return Jnoid.Signal.fromPromise($.ajax(params)).
-        prepend(Messages.checking).
+      return Jnoid.Stream.fromPromise($.ajax(params)).
+        box(Messages.checking).
         map(function () { return Messages.good }).
         recover(function (e) { return e.responseText } )
     }
@@ -100,7 +100,7 @@
 
 
     var availMessages = login.filter(nonEmpty).map(toLoginCheck).
-                              flatMapLatest(validateAjax);
+                              flatMap(validateAjax);
     var loginMessages = login.map(validateLogin).merge(availMessages);
 
     var fullnameMessages = fullname.map(validateFullname);
