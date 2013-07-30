@@ -1,16 +1,18 @@
 assert = require('chai').assert
-Jnoid = require '../jnoid.coffee.md'
+{Fire, Error, Stop} = require '../jnoid.coffee.md'
 
 module.exports =
-  expectEvents: (expectedEvents, stream, done)->
-    events = []
-    unsub = stream.subscribe (event) ->
-      if event.isEnd()
-        unsub?()
-        assert.deepEqual(events, expectedEvents)
-        done()
+  expectEvents: (expected, stream, done)->
+    actual = []
+    verify = ->
+      [snapshotActual, actual] = [actual, []]
+      assert.deepEqual snapshotActual, expected
+      done()
+    stream.subscribe (event)->
+      if event == Stop
+        verify()
       else
-        events.push(event)
+        actual.push event
 
   expectValues: (expectedValues, stream, done)->
     @expectEvents(@allValues(expectedValues), stream, done)
@@ -18,8 +20,7 @@ module.exports =
   expectErrors: (expectedValues, stream, done)->
     @expectEvents(@allErrors(expectedValues), stream, done)
 
-  value: (x)-> new Jnoid.Value(x)
-  error: (x)-> new Jnoid.Error(x)
+  value: (x)-> new Fire(x)
+  error: (x)-> new Error(x)
   allValues: (xs)-> @value(x) for x in xs
   allErrors: (xs)-> @error(x) for x in xs
-
