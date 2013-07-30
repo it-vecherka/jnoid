@@ -218,11 +218,11 @@ but the current code is simple enough.
 All proxy methods are trivial.
 
       zipWith: (others..., f)->
-        @box().zipWith(other.box() for other in others, f)
+        @box().zipWith((other.box() for other in others)..., f)
       and: (others...)->
-        @box().and(other.box() for other in others, f)
+        @box().and((other.box() for other in others)..., f)
       or: (others...)->
-        @box().or(other.box() for other in others, f)
+        @box().or((other.box() for other in others)..., f)
       not: ->
         @box().not()
 
@@ -299,7 +299,7 @@ To convert `Box` into `Stream` we take it's changes.
 Here are the proxy methods:
 
       merge: (others...)->
-        @changes().merge(other.changes() for other in others)
+        @changes().merge((other.changes() for other in others)...)
 
 Helpers
 -------
