@@ -66,68 +66,76 @@ describe 'EventStream', ->
         done
 
 describe "Box", ->
-  it "streams current value", (done)->
-    i = 0
-    donner = -> done() if ++i >= 2
-    box = Box.interval(10, [1, 2, 3])
-    h.expectValues [1, 2, 3], box, donner
-    setTimeout((-> h.expectValues([1, 2, 3], box, donner)), 15)
+  describe "essence", ->
+    it "streams current value", (done)->
+      i = 0
+      donner = -> done() if ++i >= 2
+      box = Box.interval(10, [1, 2, 3])
+      h.expectValues [1, 2, 3], box, donner
+      setTimeout((-> h.expectValues([1, 2, 3], box, donner)), 15)
 
-  it "streams ended value", (done)->
-    i = 0
-    donner = -> done() if ++i >= 2
-    box = Box.interval(10, [1, 2])
-    h.expectValues [1, 2], box, donner
-    setTimeout((-> h.expectValues([2], box, donner)), 25)
+    it "streams ended value", (done)->
+      i = 0
+      donner = -> done() if ++i >= 2
+      box = Box.interval(10, [1, 2])
+      h.expectValues [1, 2], box, donner
+      setTimeout((-> h.expectValues([2], box, donner)), 25)
 
+  describe "specific", ->
+    it 'flatMap collects only the values from last spawned streams', (done)->
+      stream = Box.interval(10, [1, 2, 3])
+      h.expectValues [10, 20, 30, 300],
+        stream.flatMap((x)-> Box.interval(8, [10*x, 100*x])),
+        done
 
-  it 'flatMap collects only the values from last spawned streams', (done)->
-    stream = Box.interval(10, [1, 2, 3])
-    h.expectValues [10, 20, 30, 300],
-      stream.flatMap((x)-> Box.interval(8, [10*x, 100*x])),
-      done
-
-  it "map2 zips two boxes", (done)->
-    first = Box.interval(10, [1, 2])
-    second = Box.interval(15, [100, 200, 300])
-    h.expectValues [102, 202, 302],
-      first.map2(second, (x, y) -> x + y),
-      done
-
-  it "sequence turns a list of boxes into a box of lists", (done)->
-    first = Box.interval(10, [1, 2])
-    second = Box.interval(15, [10, 20, 30])
-    h.expectValues [[2, 10], [2, 20], [2, 30]],
-      Box.sequence([first, second]),
-      done
-
-  describe 'zipWith', ->
-    it 'zips with function', (done)->
+    it "map2 zips two boxes", (done)->
       first = Box.interval(10, [1, 2])
       second = Box.interval(15, [100, 200, 300])
       h.expectValues [102, 202, 302],
-        first.zipWith(second, (x, y) -> x + y),
+        first.map2(second, (x, y) -> x + y),
         done
 
-  describe 'and', ->
-    it 'executes boolean "and" between streams', (done)->
+    it "sequence turns a list of boxes into a box of lists", (done)->
+      first = Box.interval(10, [1, 2])
+      second = Box.interval(15, [10, 20, 30])
+      h.expectValues [[2, 10], [2, 20], [2, 30]],
+        Box.sequence([first, second]),
+        done
+
+    describe 'zipWith', ->
+      it 'zips with function', (done)->
+        first = Box.interval(10, [1, 2])
+        second = Box.interval(15, [100, 200, 300])
+        h.expectValues [102, 202, 302],
+          first.zipWith(second, (x, y) -> x + y),
+          done
+
+  describe 'boolean', ->
+    it 'and executes boolean "and" between streams', (done)->
       first = Box.interval(10, [false, true])
       second = Box.interval(15, [false, true])
       h.expectValues [false, true],
         first.and(second),
         done
 
-  describe 'or', ->
-    it 'executes boolean "or" between streams', (done)->
+    it 'or executes boolean "or" between streams', (done)->
       first = Box.interval(10, [false, true])
       second = Box.interval(15, [false, true])
       h.expectValues [true, true],
         first.or(second),
         done
 
-  describe 'not', ->
-    it 'executes boolean "not" on box', (done)->
+    it 'not executes boolean "not" on box', (done)->
       box = Box.interval(10, [false, true, false])
       h.expectValues [true, false, true],
         box.not(),
+        done
+
+  describe "changes", ->
+    it "gets stream of changes from box", (done)->
+      box = Box.interval(10, [1, 2])
+      stream = box.changes()
+      assert.instanceOf stream, Stream
+      h.expectValues [1, 2],
+        stream,
         done

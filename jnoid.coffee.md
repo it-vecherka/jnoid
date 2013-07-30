@@ -207,6 +207,7 @@ we can supply optional inital value.
         new Box (sink)=>
           sink initial unless initial.isEmpty()
           @subscribe (event)-> sink event
+      changes: -> @
 
 Box
 ---
@@ -268,6 +269,14 @@ Helpful would be to define boolean algebra over boxes:
       and: (others...)-> @zipWith others..., (a, b)-> a && b
       or: (others...)-> @zipWith others..., (a, b)-> a || b
       not: -> @map (x)-> !x
+
+`Stream` and `Box` can be easily transformed to each other. To convert `Box`
+into `Stream` we take it's changes.
+
+      changes: ->
+        new Stream (sink)=>
+          @subscribe (event)-> sink event
+      box: -> @
 
 Helpers
 -------
