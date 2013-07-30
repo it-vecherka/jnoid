@@ -154,7 +154,6 @@ respectively within given interval.
             [value, Stop]
           else
             Stop
-      getError: fail
 
       @later: (delay, value)->
         @interval(delay, [value])
