@@ -199,8 +199,11 @@ Having this we can easily have `merge`:
       merge: (others...)-> Stream.fromList([@, others...]).flatten()
       flatten: -> @flatMap(id)
 
-Stream and Box can be easily turned into each other. To convert stream into box
-we can supply optional inital value.
+### Cross-methods
+
+To make it transparent for a user, is this stream or box, we proxy the box
+methods to box. First we define a conversion method with an optional starting
+value.
 
       box: (initial = Nothing)->
         initial = toMaybe(initial)
@@ -210,7 +213,18 @@ we can supply optional inital value.
       changes: -> @
 
 We could also define a new stream with initial value merged to the beginning,
-but the current code looks trivial.
+but the current code is simple enough.
+
+All proxy methods are trivial.
+
+      zipWith: (others..., f)->
+        @box().zipWith(other.box() for other in others, f)
+      and: (others...)->
+        @box().and(other.box() for other in others, f)
+      or: (others...)->
+        @box().or(other.box() for other in others, f)
+      not: ->
+        @box().not()
 
 Box
 ---
@@ -273,13 +287,19 @@ Helpful would be to define boolean algebra over boxes:
       or: (others...)-> @zipWith others..., (a, b)-> a || b
       not: -> @map (x)-> !x
 
-`Stream` and `Box` can be easily transformed to each other. To convert `Box`
-into `Stream` we take it's changes.
+### Cross-methods
+
+To convert `Box` into `Stream` we take it's changes.
 
       changes: ->
         new Stream (sink)=>
           @subscribe (event)-> sink event
       box: -> @
+
+Here are the proxy methods:
+
+      merge: (others...)->
+        @changes().merge(other.changes() for other in others)
 
 Helpers
 -------
