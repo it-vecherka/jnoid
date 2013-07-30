@@ -40,8 +40,6 @@ returns. Second is return `Reply.stop` from event listener.
         @subscribe = @dispatched subscribe
 
       dispatched: fail
-      @newInstance: fail
-      newInstance: fail
 
 A basic ways to listen to Observable are `onValue` and `onError`.
 
@@ -60,7 +58,7 @@ We can now define basic transforms. Start with `map` and `filter`. We can
 see common pattern there, it's abstracted in `withHandler`.
 
       withHandler: (handler)->
-        @newInstance @dispatched(@subscribe, handler)
+        new @constructor @dispatched(@subscribe, handler)
 
       map: (f)->
         @withHandler (event)-> @push event.map(f)
@@ -86,7 +84,7 @@ different `flatMap`s in our case.
 
       flatMapGeneric: (f, lastOnly) ->
         root = this
-        @newInstance (sink) ->
+        new @constructor (sink) ->
           children = []
           rootStop = false
           unsubRoot = ->
@@ -157,7 +155,7 @@ The basic ways to build an observable are `nothing`, `unit` and `error`. In
 they mean `empty`, `always` and `error`.
 
       @fromList: (values, wrapper = toEvent)->
-        @newInstance (sink) ->
+        new @ (sink) ->
           sink event for event in map wrapper, values
           sink Stop
 
@@ -169,7 +167,7 @@ they mean `empty`, `always` and `error`.
 sophisticated constructors.
 
       @fromBinder: (binder, transform = id) ->
-        @newInstance (sink) ->
+        new @ (sink) ->
           unbinder = binder (args...) ->
             events = toArray transform args...
             for event in map toEvent, events
@@ -257,8 +255,6 @@ adds them. On each event it just pushes it to all sinks.
     class Stream extends Observable
       dispatched: (subscribe, handler)->
         new Dispatcher(subscribe, handler).subscribe
-      newInstance: (args...)-> new Stream args...
-      @newInstance: (args...)-> new Stream args...
 
 For this class we can have `flatMap` aka `bind`. In our case it's `flatMapAll`:
 
@@ -324,8 +320,6 @@ slightly tweaked dispatcher.
     class Box extends Observable
       dispatched: (subscribe, handler)->
         new BoxDispatcher(subscribe, handler).subscribe
-      newInstance: (args...)-> new Box args...
-      @newInstance: (args...)-> new Box args...
 
 For this class we can have `flatMap` aka `bind`. In our case it's `flatMapAll`:
 
