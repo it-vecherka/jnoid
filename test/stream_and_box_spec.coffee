@@ -40,6 +40,12 @@ describe 'EventStream', ->
         stream.flatMap((x)-> Stream.interval(8, [10*x, 100*x])),
         done
 
+    it 'skipDuplicates skips duplicates', (done)->
+      stream = Stream.interval(5, [10, 10, 200, 200])
+      h.expectValues [10, 200],
+        stream.skipDuplicates(),
+        done
+
   describe 'combination', ->
     it 'merge merges streams', (done)->
       first = Stream.interval(5, [1, 2])

@@ -107,6 +107,26 @@ different `flatMap`s in our case.
       flatMapAll: (f)-> @flatMapGeneric(f, false)
       flatMapLast: (f)-> @flatMapGeneric(f, true)
 
+We can also define `skipDuplicates` which is extremely useful:
+
+      withStateMachine: (initState, f) ->
+        state = initState
+        @withHandler (event) ->
+          [newState, outputs] = f(state, event)
+          state = newState
+          stopped = any outputs,
+                    (output)=> @push(output) == Reply.stop
+          if stopped then Reply.stop else Reply.more
+
+      skipDuplicates: (isEqual = (a, b) -> a is b) ->
+        @withStateMachine Nothing, (prev, event) ->
+          event.map((v)->
+            if prev == Nothing || !prev.test((p)-> isEqual(v, p))
+              [new Just(v), [event]]
+            else
+              [prev, []]
+          ).getOrElse [prev, [event]]
+
 ### Constructors
 
 The basic ways to build an observable are `nothing`, `unit` and `error`. In
@@ -168,6 +188,22 @@ errors here. In a transform function we attach end to our stream.
             handler new Error e
           -> promise.abort?()
         , (value) -> [value, Stop]
+
+Finally let's define the way to receive events from DOM objects. We'll do
+it assuming we're called in jQuery/Zepto fashion.
+
+We allow to override `transform` - by default it'll take the first
+argument, which is usually a jQuery event. We use `on` to subscribe and
+`off` to unsubscribe.
+
+      @fromDOM: (element, event, selector, transform) ->
+        [eventTransformer, selector] = [selector, null] if isFunction(selector)
+
+        @fromBinder (handler) =>
+          element.on(event, selector, handler)
+          => element.off(event, selector, handler)
+        , eventTransformer
+
 
 Stream
 ------
@@ -378,6 +414,7 @@ We need some simple helper functions.
         return true if f(x)
       return false
     copyArray = (a)-> a.slice()
+    isFunction = (f) -> typeof f == "function"
     toArray = (x) -> if x instanceof Array then x else [x]
     toMaybe = (x) ->
       if x instanceof Maybe then x else new Just x
