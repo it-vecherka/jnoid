@@ -6,7 +6,9 @@ browser or Node.js applications. It owes the idea to Bacon.js, but should
 describe the domain in proper terms, have less operations in primitives and be
 shorter and simpler.
 
-    Jnoid = {}
+    Jnoid = {
+      VERSION = "0.0.1"
+    }
 
 The core idea is having an abstraction of `Stream` which is a discrete
 sequence of values and an abstraction of a `Box` which is a continous
