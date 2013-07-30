@@ -1,6 +1,6 @@
 assert = require('chai').assert
 h = require('./test_helpers')
-{Stream, Box} = require '../jnoid.coffee.md'
+{Stream, Box, Event, Fire, Error, Stop} = require '../jnoid.coffee.md'
 
 describe 'EventStream', ->
   describe 'basics', ->
@@ -44,6 +44,45 @@ describe 'EventStream', ->
       stream = Stream.interval(5, [10, 10, 200, 200])
       h.expectValues [10, 200],
         stream.skipDuplicates(),
+        done
+
+  describe 'listener', ->
+    it 'onValue listens to values only', ->
+      stream = new Stream (sink)->
+        sink new Fire 5
+        sink new Error 'whut'
+        sink new Fire 10
+        sink Stop
+
+      events = []
+      stream.onValue (e)-> events.push e
+      setTimeout ->
+        assert.equal [5, 10], events
+      , 1000
+
+    it 'onError listens to errors only', ->
+      stream = new Stream (sink)->
+        sink new Fire 5
+        sink new Error 'whut'
+        sink new Fire 10
+        sink Stop
+
+      events = []
+      stream.onError (e)-> events.push e
+      setTimeout ->
+        assert.equal ['whut'], events
+      , 1000
+
+  describe 'recover', ->
+    it 'maps errors to values', (done)->
+      stream = new Stream (sink)->
+        sink new Fire 5
+        sink new Error 'whut'
+        sink new Fire 10
+        sink Stop
+
+      h.expectValues [5, 4, 10],
+        stream.recover((x) -> x.length),
         done
 
   describe 'combination', ->

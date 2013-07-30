@@ -43,6 +43,19 @@ returns. Second is return `Reply.stop` from event listener.
       @newInstance: fail
       newInstance: fail
 
+A basic ways to listen to Observable are `onValue` and `onError`.
+
+      onValue: (f) ->
+        @subscribe (event) ->
+          event.map((v)-> f(v)).getOrElse(Reply.more)
+
+      onError: (f) ->
+        @subscribe (event) ->
+          if event instanceof Error
+            f event.error
+          else
+            Reply.more
+
 We can now define basic transforms. Start with `map` and `filter`. We can
 see common pattern there, it's abstracted in `withHandler`.
 
@@ -54,6 +67,16 @@ see common pattern there, it's abstracted in `withHandler`.
 
       filter: (f)->
         @withHandler (event)-> if event.test(f) then @push event else Reply.more
+
+A useful combinator is `recover`, with will turn errors into regular
+events using transform function.
+
+      recover: (f)->
+        @withHandler (event) ->
+          if event instanceof Error
+            @push new Fire f(event.error)
+          else
+            @push event
 
 The most powerful combinator in our case is `flatMap`. It accepts a function
 that turns each of the values in observable to a new observable. Then we can
@@ -363,16 +386,18 @@ sum of `Maybe` and `Either` in some sence.
       isEmpty: -> false
       inspect: -> "Just #{@value}"
 
-    class Wrong extends Maybe
-      constructor: (@error) ->
+    class Bad extends Maybe
       getOrElse: (some)-> some
       filter: (f) -> @
       test: (f) -> true
       map: (f) -> @
       isEmpty: -> true
+
+    class Wrong extends Bad
+      constructor: (@error) ->
       inspect: -> "Wrong #{@error}"
 
-    Nothing = new class extends Wrong
+    Nothing = new class extends Bad
       constructor: ->
       inspect: -> "Nothing"
 
