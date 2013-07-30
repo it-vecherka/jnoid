@@ -9,7 +9,7 @@ module.exports =
       assert.deepEqual snapshotActual, expected
       done()
     stream.subscribe (event)->
-      if event.isEmpty()
+      if event == Stop
         verify()
       else
         actual.push event

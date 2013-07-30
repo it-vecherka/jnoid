@@ -158,6 +158,17 @@ respectively within given interval.
       @later: (delay, value)->
         @interval(delay, [value])
 
+Let's also define a function that works on promises, e.g., ajax. The
+resource releasing here for ajax is abort. We should also handle promise
+errors here. In a transform function we attach end to our stream.
+
+      @fromPromise: (promise) ->
+        @fromBinder (handler) ->
+          promise.then handler, (e) ->
+            handler new Error e
+          -> promise.abort?()
+        , (value) -> [value, Stop]
+
 Stream
 ------
 
