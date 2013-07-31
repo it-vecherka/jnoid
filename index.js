@@ -1,2 +1,2 @@
 require('coffee-script');
-require('./src/jnoid.coffee');
+require('./jnoid.coffee.md');
