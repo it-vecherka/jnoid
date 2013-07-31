@@ -14,16 +14,50 @@ The core idea is having an abstraction of `Stream` which is a discrete
 sequence of values and an abstraction of a `Box` which is a continous
 time-varying value, both of which you can subscribe on.
 
+Maybe and Events
+----------------
+
+We'll slightly extend the famous `Maybe` idiom to support error values. Now
+it's a sum of `Maybe` and `Either` and can be described as `Maybe = Just x |
+Wrong y | Nothing`.
+```coffeescript
+class Maybe
+
+class Just extends Maybe
+  constructor: (@value) ->
+  getOrElse: -> @value
+  filter: (f) -> if @test(f) then @ else Nothing
+  test: (f) -> f @value
+  map: (f) -> new Just(f @value)
+  isEmpty: -> false
+  inspect: -> "Just #{@value}"
+
+class Bad extends Maybe
+  getOrElse: (some)-> some
+  filter: (f) -> @
+  test: (f) -> true
+  map: (f) -> @
+  isEmpty: -> true
+
+class Wrong extends Bad
+  constructor: (@error) ->
+  inspect: -> "Wrong #{@error}"
+
+Nothing = new class extends Bad
+  constructor: ->
+  inspect: -> "Nothing"
+```
+`Event` class will be just a type alias for it.
+```coffeescript
+[Event, Fire, Error, Stop] = [Maybe, Just, Wrong, Nothing]
+toEvent = (x) -> if x instanceof Event then x else new Fire x
+toError = (x) -> if x instanceof Event then x else new Error x
+```
 Observable
 ----------
 
-The point is that we can abstract from both of them and define a common
+The point is that we can abstract from `Stream` and `Box` and define a common
 behavior, calling it `Observable`.
-
-We represent event values as instances of `Event` monad. To have it we'll take
-a regular `Maybe` and `Either`, mix them both and produce a
-`Maybe = Just x | Wrong y | Nothing` type, which we alias to
-`Event = Fire x | Error y | Stop`. See the appropriate section below.
 
 Class `Observable` will be determined via a `subscribe` function. This
 function should receive a subscriber or sink function as an argument and
@@ -33,22 +67,27 @@ and `Box`.
 There are two ways to unsubscribe. First is to call function that subscribe
 returns. Second is return `Reply.stop` from event listener.
 ```coffeescript
-Reply =
-  stop: "<stop>"
-  more: "<more>"
-
 class Observable
   constructor: (subscribe)->
     @subscribe = @dispatched subscribe
-
+```
+`dispathed` is a function that makes `Observable` abstract and will hold the
+actual implementation differences between `Stream` and `Box`. If you are
+interested in `dispatched`, check it's implementations there.
+```coffeescript
   dispatched: fail
 ```
-A basic ways to listen to Observable are `onValue` and `onError`.
+A basic ways to listen to Observable are `onValue` and `onError`. While
+`subscribe` sends raw events, `onValue` unwraps them in case they hold values
+and deliver them to the subscriber.
 ```coffeescript
   onValue: (f) ->
     @subscribe (event) ->
       event.map((v)-> f(v)).getOrElse(Reply.more)
-
+```
+`onError` does roughly the same as `onValue`, but is selecting errors and
+unwraps them.
+```coffeescript
   onError: (f) ->
     @subscribe (event) ->
       if event instanceof Error
@@ -79,10 +118,17 @@ events using transform function.
         @push event
 ```
 The most powerful combinator in our case is `flatMap`. It accepts a function
-that turns each of the values in observable to a new observable. Then we can
-eigther collect all the events from the spawned childen, or when a new event
-occurs on root, unsubscribe all the children and listen to it. These will be
-different `flatMap`s in our case.
+that turns each of the values in observable to a new observable. We then return
+a new Observable that will combine them.
+
+The first way to combine them is to just collect all the events from the
+spawned childen. This matches the semantics of `Stream` and will allow us to
+produce merge.
+
+Another way to combine events is to unsubscribe all the existing children, when
+a new event occurs on root, then spawn a new one and just listen to it. You can
+think of it as swiching from one observable to another one. This matches the
+semantics of `Box` and will allow us to produce `zip`.
 ```coffeescript
   flatMapGeneric: (f, lastOnly) ->
     root = this
@@ -150,11 +196,13 @@ We can also define `skipDuplicates` which is extremely useful.
           [prev, []]
       ).getOrElse [prev, [event]]
 ```
-### Constructors
+How to build observables
+------------------------
 
 The basic ways to build an observable are `nothing`, `unit` and `error`. In
 `Stream` semantics they mean `never`, `once` and `error`, in `Box` semantics
-they mean `empty`, `always` and `error`.
+they mean `empty`, `always` and `error`. We won't create the aliases and give
+these names to get you the feel of what they mean.
 ```coffeescript
   @fromList: (values, wrapper = toEvent)->
     new @ (sink) ->
@@ -237,7 +285,7 @@ it uses the appropriate dispatcher to do it.
 `Dispatcher` activates the listeners when a first sink is added and then just
 adds them. On each event it just pushes it to all sinks.
 ```coffeescript
-class Dispatcher
+class StreamDispatcher
   constructor: (subscribe, handler) ->
     subscribe ?= (event) ->
     sinks = []
@@ -253,10 +301,13 @@ class Dispatcher
       ->
         remove sink, sinks
         unsubSelf?() unless any sinks
-
+```
+To have `Stream` class we just need to override abstract `dispatched` method
+from the base class to use `StreamDispatcher`.
+```coffeescript
 class Stream extends Observable
   dispatched: (subscribe, handler)->
-    new Dispatcher(subscribe, handler).subscribe
+    new StreamDispatcher(subscribe, handler).subscribe
 ```
 For this class we can have `flatMap` aka `bind`. In our case it's `flatMapAll`.
 ```coffeescript
@@ -268,7 +319,8 @@ Having this we can easily have `merge`.
     Stream.fromList(map method("changes"), [@, others...]).flatten()
   flatten: -> @flatMap(id)
 ```
-### Cross-methods
+Using Stream when we need Box
+-----------------------------
 
 To make it transparent for a user, is this stream or box, we proxy the box
 methods to box. First we define a conversion method with an optional starting
@@ -294,10 +346,12 @@ All proxy methods are trivial.
 Box
 ---
 
-Class `Box` represents continuous value that changes with time. So it uses a
-slightly tweaked dispatcher.
+Class `Box` represents continuous value that changes with time. So we need a
+slightly tweaked dispatcher. The difference is that it holds the current
+value and sends it to each new subscriber. Another difference is that even when
+the Box is ended, it still sends the last value and then immediately sends stop
 ```coffeescript
-class BoxDispatcher extends Dispatcher
+class BoxDispatcher extends StreamDispatcher
   constructor: (subscribe, handler) ->
     super subscribe, handler
     current = Nothing
@@ -318,12 +372,14 @@ class BoxDispatcher extends Dispatcher
         nop
       else
         subscribe.apply(@, [sink])
-
+```
+Now class `Box` is going to use that dispatcher.
+```coffeescript
 class Box extends Observable
   dispatched: (subscribe, handler)->
     new BoxDispatcher(subscribe, handler).subscribe
 ```
-For this class we can have `flatMap` aka `bind`. In our case it's `flatMapAll`.
+For this class we can have `flatMap` aka `bind`. In our case it's `flatMapLast`.
 ```coffeescript
   flatMap: (args...)-> @flatMapLast(args...)
 ```
@@ -337,8 +393,7 @@ Having this, `zipWith` is easy.
 ```coffeescript
   @sequence: (boxes)->
     foldl boxes, @unit([]), (acc, box)->
-      acc.map2 box, (memo, value)->
-        tap copyArray(memo), (newMemo)-> newMemo.push(value)
+      acc.map2 box, (memo, value)-> append memo, value
   @zipWith: (boxes, f)->
     @sequence(boxes).map uncurry f
   zipWith: (others..., f)->
@@ -350,7 +405,8 @@ Helpful would be to define boolean algebra over boxes.
   or: (others...)-> @zipWith others..., (a, b)-> a || b
   not: -> @map (x)-> !x
 ```
-### Cross-methods
+Using Box when we need Stream
+-----------------------------
 
 To convert `Box` into `Stream` we take it's changes.
 ```coffeescript
@@ -366,45 +422,12 @@ Here are the proxy methods.
 Helpers
 -------
 
-### Maybe
-
-We'll slightly extend the `Maybe` idiom to support error values. Now it's a
-sum of `Maybe` and `Either` in some sence.
+Pretty trivial special values to return from event listeners.
 ```coffeescript
-class Maybe
-
-class Just extends Maybe
-  constructor: (@value) ->
-  getOrElse: -> @value
-  filter: (f) -> if @test(f) then @ else Nothing
-  test: (f) -> f @value
-  map: (f) -> new Just(f @value)
-  isEmpty: -> false
-  inspect: -> "Just #{@value}"
-
-class Bad extends Maybe
-  getOrElse: (some)-> some
-  filter: (f) -> @
-  test: (f) -> true
-  map: (f) -> @
-  isEmpty: -> true
-
-class Wrong extends Bad
-  constructor: (@error) ->
-  inspect: -> "Wrong #{@error}"
-
-Nothing = new class extends Bad
-  constructor: ->
-  inspect: -> "Nothing"
+Reply =
+  stop: "<stop>"
+  more: "<more>"
 ```
-Type aliases for events.
-```coffeescript
-[Event, Fire, Error, Stop] = [Maybe, Just, Wrong, Nothing]
-toEvent = (x) -> if x instanceof Event then x else new Fire x
-toError = (x) -> if x instanceof Event then x else new Error x
-```
-### Our small underscore
-
 We need some simple helper functions.
 ```coffeescript
 empty = (xs)-> xs.length == 0
@@ -434,7 +457,8 @@ any = (xs, f = id) ->
   for x in xs
     return true if f(x)
   return false
-copyArray = (a)-> a.slice()
+copyArray = (xs)-> xs.slice()
+append = (xs, x)-> tap copyArray(xs), (copy)-> copy.push x
 isFunction = (f) -> typeof f == "function"
 toArray = (x) -> if x instanceof Array then x else [x]
 toMaybe = (x) ->
