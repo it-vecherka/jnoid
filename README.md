@@ -220,12 +220,12 @@ argument, which is usually a jQuery event. We use `on` to subscribe and
 `off` to unsubscribe.
 ```coffeescript
   @fromDOM: (element, event, selector, transform) ->
-    [eventTransformer, selector] = [selector, null] if isFunction(selector)
+    [transform, selector] = [selector, null] if isFunction(selector)
 
     @fromBinder (handler) =>
       element.on(event, selector, handler)
       => element.off(event, selector, handler)
-    , eventTransformer
+    , transform
 ```
 
 Stream
