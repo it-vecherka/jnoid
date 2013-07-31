@@ -3,6 +3,4 @@ node_js:
   - "0.10"
   - "0.11"
 notifications:
-  email:
-    - dmitriy.kiriyenko@gmail.com
-    - alexey@osipenko.in.ua
+  email: false
