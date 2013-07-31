@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+  <title>Simple example</title>
+  <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+  <meta name="viewport" content="width=device-width, target-densitydpi=160dpi, initial-scale=1.0; maximum-scale=1.0; user-scalable=0;">
+  <link rel="stylesheet" media="all" href="docco.css" />
+</head>
+<body>
+  <div id="container">
+    <div id="background"></div>
+
+      <ul id="jump_to">
+        <li>
+          <a class="large" href="javascript:void(0);">Jump To &hellip;</a>
+          <a class="small" href="javascript:void(0);">+</a>
+          <div id="jump_wrapper">
+          <div id="jump_page">
+
+
+              <a class="source" href="simple.coffee.html">
+                simple.coffee.md
+              </a>
+
+
+              <a class="source" href="index.html">
+                jnoid.coffee.md
+              </a>
+
+          </div>
+        </li>
+      </ul>
+
+    <ul class="sections">
+
+
+
+        <li id="section-1">
+            <div class="annotation">
+
+              <div class="pilwrap for-h1">
+                <a class="pilcrow" href="#section-1">&#182;</a>
+              </div>
+              <h1>Simple example</h1>
+
+            </div>
+
+        </li>
+
+
+        <li id="section-2">
+            <div class="annotation">
+
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-2">&#182;</a>
+              </div>
+              <p>Here is a template for the form which required for the current example</p>
+
+            </div>
+
+            <div class="content"><div class='highlight'><pre>template('
+    &lt;form class="form-horizontal" action="/register" method="get"&gt;
+      &lt;div class="control-group" id="login"&gt;
+        &lt;label class="control-label" for="inputLogin"&gt;Login&lt;/label&gt;
+        &lt;div class="controls"&gt;
+          &lt;input type="text" id="inputLogin" placeholder="Login" name="login"&gt;
+          &lt;span class="help-block"&gt;&lt;!-- to display validation errors --&gt;&lt;/span&gt;
+        &lt;/div&gt;
+      &lt;/div&gt;
+      &lt;div class="control-group" id="fullname"&gt;
+        &lt;label class="control-label" for="inputPassword"&gt;Fullname&lt;/label&gt;
+        &lt;div class="controls"&gt;
+          &lt;input type="text" id="inputFullname" placeholder="Fullname" name="fullname"&gt;
+          &lt;span class="help-block"&gt;&lt;!-- to display validation errors --&gt;&lt;/span&gt;
+        &lt;/div&gt;
+      &lt;/div&gt;
+      &lt;div class="control-group"&gt;
+        &lt;div class="controls"&gt;
+          &lt;button type="submit" id="submit" class="btn" disabled="disabled"&gt;Sign in&lt;/button&gt;
+        &lt;/div&gt;
+      &lt;/div&gt;
+    &lt;/form&gt;
+')</pre></div></div>
+
+        </li>
+
+
+        <li id="section-3">
+            <div class="annotation">
+
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-3">&#182;</a>
+              </div>
+              <p>So lets start with the example</p>
+
+            </div>
+
+            <div class="content"><div class='highlight'><pre><span class="function"><span class="title">textFieldValue</span></span> = (textField) -&gt;
+  Jnoid.Stream.fromDOM(textField, <span class="string">"keyup input"</span>).map((e) -&gt;
+    $(e.target).val()
+  ).box($(textField).val()).skipDuplicates()
+
+Messages =
+  provideLogin: <span class="string">"Provide login"</span>
+  provideFullname: <span class="string">"Provide fullname"</span>
+  fullnameTooLong: <span class="string">"Fullname is too long"</span>
+  checking: <span class="string">"Checking"</span>
+  good: <span class="string">"Good"</span>
+
+<span class="function"><span class="title">isGood</span></span> = (message) -&gt; message <span class="keyword">is</span> Messages.good
+
+<span class="function"><span class="title">nonEmpty</span></span> = (x) -&gt; x.length &gt; <span class="number">0</span>
+
+<span class="function"><span class="title">validateAjax</span></span> = (params) -&gt;
+  Jnoid.Stream.fromPromise($.ajax(params)).box(Messages.checking).map(-&gt;
+    Messages.good
+  ).recover (e) -&gt;
+    e.responseText
+
+
+<span class="function"><span class="title">validateLogin</span></span> = (login) -&gt;
+  <span class="keyword">if</span> login.length &lt;= <span class="number">0</span>
+    Messages.provideLogin
+  <span class="keyword">else</span>
+    Messages.good
+
+<span class="function"><span class="title">validateFullname</span></span> = (fullname) -&gt;
+  <span class="keyword">if</span> fullname.length &lt;= <span class="number">0</span>
+    Messages.provideFullname
+  <span class="keyword">else</span> <span class="keyword">if</span> fullname.length &gt; <span class="number">30</span>
+    Messages.fullnameTooLong
+  <span class="keyword">else</span>
+    Messages.good
+
+login = textFieldValue($(<span class="string">"#login input"</span>))
+fullname = textFieldValue($(<span class="string">"#fullname input"</span>))
+<span class="function"><span class="title">toLoginCheck</span></span> = (login) -&gt;
+  url: <span class="string">"/check-login/"</span> + login
+
+availMessages = login.filter(nonEmpty).map(toLoginCheck).flatMap(validateAjax)
+loginMessages = login.map(validateLogin).merge(availMessages)
+fullnameMessages = fullname.map(validateFullname)
+buttonEnabled = loginMessages.map(isGood).<span class="keyword">and</span>(fullnameMessages.map(isGood))</pre></div></div>
+
+        </li>
+
+
+        <li id="section-4">
+            <div class="annotation">
+
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-4">&#182;</a>
+              </div>
+              <p>The <code>setAttribute</code> is a helper, but it not in the library yet.</p>
+
+            </div>
+
+            <div class="content"><div class='highlight'><pre><span class="function"><span class="title">setAttribute</span></span> = (element, attribute) -&gt;
+  (value) -&gt;
+    $(element).attr attribute, value</pre></div></div>
+
+        </li>
+
+
+        <li id="section-5">
+            <div class="annotation">
+
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-5">&#182;</a>
+              </div>
+              <p>So, here is the application</p>
+
+            </div>
+
+            <div class="content"><div class='highlight'><pre>loginMessages.onValue $(<span class="string">"#login .help-block"</span>).text
+fullnameMessages.onValue $(<span class="string">"#fullname .help-block"</span>).text
+buttonEnabled.<span class="keyword">not</span>().onValue setAttribute $(<span class="string">"#submit"</span>), <span class="string">"disabled"</span></pre></div></div>
+
+        </li>
+
+    </ul>
+  </div>
+</body>
+</html>
