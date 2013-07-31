@@ -24,6 +24,8 @@
     "chai": "*",
     "express": "*",
     "underscore": "*",
-    "docco": "*"
+    "docco": "*",
+    "optimist": "*",
+    "ejs": "*"
   }
 }
