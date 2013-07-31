@@ -7,7 +7,7 @@ describe the domain in proper terms, have less operations in primitives and be
 shorter and simpler.
 ```coffeescript
 Jnoid = {
-  VERSION = "0.0.1"
+  VERSION: "0.0.1"
 }
 ```
 The core idea is having an abstraction of `Stream` which is a discrete
@@ -130,7 +130,7 @@ different `flatMap`s in our case.
   flatMapAll: (f)-> @flatMapGeneric(f, false)
   flatMapLast: (f)-> @flatMapGeneric(f, true)
 ```
-We can also define `skipDuplicates` which is extremely useful:
+We can also define `skipDuplicates` which is extremely useful.
 ```coffeescript
   withStateMachine: (initState, f) ->
     state = initState
@@ -258,11 +258,11 @@ class Stream extends Observable
   dispatched: (subscribe, handler)->
     new Dispatcher(subscribe, handler).subscribe
 ```
-For this class we can have `flatMap` aka `bind`. In our case it's `flatMapAll`:
+For this class we can have `flatMap` aka `bind`. In our case it's `flatMapAll`.
 ```coffeescript
   flatMap: (args...)-> @flatMapAll(args...)
 ```
-Having this we can easily have `merge`:
+Having this we can easily have `merge`.
 ```coffeescript
   merge: (others...)->
     Stream.fromList(map method("changes"), [@, others...]).flatten()
@@ -323,7 +323,7 @@ class Box extends Observable
   dispatched: (subscribe, handler)->
     new BoxDispatcher(subscribe, handler).subscribe
 ```
-For this class we can have `flatMap` aka `bind`. In our case it's `flatMapAll`:
+For this class we can have `flatMap` aka `bind`. In our case it's `flatMapAll`.
 ```coffeescript
   flatMap: (args...)-> @flatMapLast(args...)
 ```
@@ -333,7 +333,7 @@ for two boxes.
   map2: (other, f)->
     @flatMap (x)-> other.box().map (y)-> f(x, y)
 ```
-Having this, `zipWith` is easy:
+Having this, `zipWith` is easy.
 ```coffeescript
   @sequence: (boxes)->
     foldl boxes, @unit([]), (acc, box)->
@@ -344,7 +344,7 @@ Having this, `zipWith` is easy:
   zipWith: (others..., f)->
     Box.zipWith [@, others...], f
 ```
-Helpful would be to define boolean algebra over boxes:
+Helpful would be to define boolean algebra over boxes.
 ```coffeescript
   and: (others...)-> @zipWith others..., (a, b)-> a && b
   or: (others...)-> @zipWith others..., (a, b)-> a || b
@@ -359,7 +359,7 @@ To convert `Box` into `Stream` we take it's changes.
       @subscribe (event)-> sink event
   box: -> @
 ```
-Here are the proxy methods:
+Here are the proxy methods.
 ```coffeescript
   merge: (others...)-> @changes().merge(others...)
 ```
@@ -397,7 +397,7 @@ Nothing = new class extends Bad
   constructor: ->
   inspect: -> "Nothing"
 ```
-Type aliases for events:
+Type aliases for events.
 ```coffeescript
 [Event, Fire, Error, Stop] = [Maybe, Just, Wrong, Nothing]
 toEvent = (x) -> if x instanceof Event then x else new Fire x
@@ -443,7 +443,7 @@ toMaybe = (x) ->
 Exports
 -------
 
-We now need to make our objects usable outside:
+We now need to make our objects usable outside.
 ```coffeescript
 for name, value of {Stream, Box, Event, Fire, Error, Stop,
                                  Maybe, Just, Wrong, Nothing}
