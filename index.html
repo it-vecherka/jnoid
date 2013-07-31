@@ -12,38 +12,38 @@
     <div class="page">
 
       <div class="header">
-
-
+        
+          
           <h1>Jnoid</h1>
 
+          
+        
 
-
-
-
+        
       </div>
 
-
-
+      
+        
         <p>This is a functional reactive programming library in Coffescript to use in
 browser or Node.js applications. It owes the idea to Bacon.js, but should
 describe the domain in proper terms, have less operations in primitives and be
 shorter and simpler.</p>
 
-
+        
           <div class='highlight'><pre>Jnoid = {
   VERSION = <span class="string">"0.0.1"</span>
 }</pre></div>
-
-
-
+        
+      
+        
         <p>The core idea is having an abstraction of <code>Stream</code> which is a discrete
 sequence of values and an abstraction of a <code>Box</code> which is a continous
 time-varying value, both of which you can subscribe on.</p>
 <h2>Observable</h2>
 
-
-
-
+        
+      
+        
         <p>The point is that we can abstract from both of them and define a common
 behavior, calling it <code>Observable</code>.</p>
 <p>We represent event values as instances of <code>Event</code> monad. To have it we&#39;ll take
@@ -57,7 +57,7 @@ and <code>Box</code>.</p>
 <p>There are two ways to unsubscribe. First is to call function that subscribe
 returns. Second is return <code>Reply.stop</code> from event listener.</p>
 
-
+        
           <div class='highlight'><pre>Reply =
   stop: <span class="string">"&lt;stop&gt;"</span>
   more: <span class="string">"&lt;more&gt;"</span>
@@ -67,12 +67,12 @@ returns. Second is return <code>Reply.stop</code> from event listener.</p>
     <span class="property">@subscribe</span> = <span class="property">@dispatched</span> subscribe
 
   dispatched: fail</pre></div>
-
-
-
+        
+      
+        
         <p>A basic ways to listen to Observable are <code>onValue</code> and <code>onError</code>.</p>
 
-
+        
           <div class='highlight'><pre>  onValue: (f) -&gt;
     <span class="property">@subscribe</span> (event) -&gt;
       event.map((v)-&gt; f(v)).getOrElse(Reply.more)
@@ -83,13 +83,13 @@ returns. Second is return <code>Reply.stop</code> from event listener.</p>
         f event.error
       <span class="keyword">else</span>
         Reply.more</pre></div>
-
-
-
+        
+      
+        
         <p>We can now define basic transforms. Start with <code>map</code> and <code>filter</code>. We can
 see common pattern there, it&#39;s abstracted in <code>withHandler</code>.</p>
 
-
+        
           <div class='highlight'><pre>  withHandler: (handler)-&gt;
     <span class="keyword">new</span> <span class="property">@constructor</span> <span class="property">@dispatched</span>(<span class="property">@subscribe</span>, handler)
 
@@ -98,29 +98,29 @@ see common pattern there, it&#39;s abstracted in <code>withHandler</code>.</p>
 
   filter: (f)-&gt;
     <span class="property">@withHandler</span> (event)-&gt; <span class="keyword">if</span> event.test(f) <span class="keyword">then</span> <span class="property">@push</span> event <span class="keyword">else</span> Reply.more</pre></div>
-
-
-
+        
+      
+        
         <p>A useful combinator is <code>recover</code>, with will turn errors into regular
 events using transform function.</p>
 
-
+        
           <div class='highlight'><pre>  recover: (f)-&gt;
     <span class="property">@withHandler</span> (event) -&gt;
       <span class="keyword">if</span> event <span class="keyword">instanceof</span> Error
         <span class="property">@push</span> <span class="keyword">new</span> Fire f(event.error)
       <span class="keyword">else</span>
         <span class="property">@push</span> event</pre></div>
-
-
-
+        
+      
+        
         <p>The most powerful combinator in our case is <code>flatMap</code>. It accepts a function
 that turns each of the values in observable to a new observable. Then we can
 eigther collect all the events from the spawned childen, or when a new event
 occurs on root, unsubscribe all the children and listen to it. These will be
 different <code>flatMap</code>s in our case.</p>
 
-
+        
           <div class='highlight'><pre>  flatMapGeneric: (f, lastOnly) -&gt;
     root = <span class="keyword">this</span>
     <span class="keyword">new</span> <span class="property">@constructor</span> (sink) -&gt;
@@ -166,12 +166,12 @@ different <code>flatMap</code>s in our case.</p>
 
   flatMapAll: (f)-&gt; <span class="property">@flatMapGeneric</span>(f, <span class="literal">false</span>)
   flatMapLast: (f)-&gt; <span class="property">@flatMapGeneric</span>(f, <span class="literal">true</span>)</pre></div>
-
-
-
+        
+      
+        
         <p>We can also define <code>skipDuplicates</code> which is extremely useful:</p>
 
-
+        
           <div class='highlight'><pre>  withStateMachine: (initState, f) -&gt;
     state = initState
     <span class="property">@withHandler</span> (event) -&gt;
@@ -189,15 +189,15 @@ different <code>flatMap</code>s in our case.</p>
         <span class="keyword">else</span>
           [prev, []]
       ).getOrElse [prev, [event]]</pre></div>
-
-
-
+        
+      
+        
         <h3>Constructors</h3>
 <p>The basic ways to build an observable are <code>nothing</code>, <code>unit</code> and <code>error</code>. In
 <code>Stream</code> semantics they mean <code>never</code>, <code>once</code> and <code>error</code>, in <code>Box</code> semantics
 they mean <code>empty</code>, <code>always</code> and <code>error</code>.</p>
 
-
+        
           <div class='highlight'><pre>  <span class="property">@fromList</span>: (values, wrapper = toEvent)-&gt;
     <span class="keyword">new</span> @ (sink) -&gt;
       sink event <span class="keyword">for</span> event <span class="keyword">in</span> map wrapper, values
@@ -206,13 +206,13 @@ they mean <code>empty</code>, <code>always</code> and <code>error</code>.</p>
   <span class="property">@nothing</span>: -&gt; <span class="property">@fromList</span> []
   <span class="property">@unit</span>: (value)-&gt; <span class="property">@fromList</span> [value]
   <span class="property">@error</span>: (value)-&gt; <span class="property">@fromList</span> [value], toError</pre></div>
-
-
-
+        
+      
+        
         <p><code>fromBinder</code> just adds a syntax sugar for us to easily define more
 sophisticated constructors.</p>
 
-
+        
           <div class='highlight'><pre>  <span class="property">@fromBinder</span>: (binder, transform = id) -&gt;
     <span class="keyword">new</span> @ (sink) -&gt;
       unbinder = binder (args...) -&gt;
@@ -220,24 +220,24 @@ sophisticated constructors.</p>
         <span class="keyword">for</span> event <span class="keyword">in</span> map toEvent, events
           tap sink(event), (reply)-&gt;
             unbinder() <span class="keyword">if</span> event == Stop <span class="keyword">or</span> reply == Reply.stop</pre></div>
-
-
-
+        
+      
+        
         <p><code>poll</code> polls a function within given interval.</p>
 
-
+        
           <div class='highlight'><pre>  <span class="property">@poll</span>: (delay, poll) -&gt;
     <span class="property">@fromBinder</span> (handler) -&gt;
       i = setInterval(handler, delay)
       -&gt; clearInterval(i)
     , poll</pre></div>
-
-
-
+        
+      
+        
         <p><code>interval</code> and <code>later</code> send a fixed list of events or one event
 respectively within given interval.</p>
 
-
+        
           <div class='highlight'><pre>  <span class="property">@interval</span>: (delay, list)-&gt;
     index = <span class="number">0</span>
     <span class="property">@poll</span> delay, -&gt;
@@ -251,51 +251,51 @@ respectively within given interval.</p>
 
   <span class="property">@later</span>: (delay, value)-&gt;
     <span class="property">@interval</span>(delay, [value])</pre></div>
-
-
-
+        
+      
+        
         <p>Let&#39;s also define a function that works on promises, e.g., ajax. The
 resource releasing here for ajax is abort. We should also handle promise
 errors here. In a transform function we attach end to our stream.</p>
 
-
+        
           <div class='highlight'><pre>  <span class="property">@fromPromise</span>: (promise) -&gt;
     <span class="property">@fromBinder</span> (handler) -&gt;
       promise.<span class="keyword">then</span> handler, (e) -&gt;
         handler <span class="keyword">new</span> Error e
       -&gt; promise.abort?()
     , (value) -&gt; [value, Stop]</pre></div>
-
-
-
+        
+      
+        
         <p>Finally let&#39;s define the way to receive events from DOM objects. We&#39;ll do
 it assuming we&#39;re called in jQuery/Zepto fashion.</p>
 <p>We allow to override <code>transform</code> - by default it&#39;ll take the first
 argument, which is usually a jQuery event. We use <code>on</code> to subscribe and
 <code>off</code> to unsubscribe.</p>
 
-
+        
           <div class='highlight'><pre>  <span class="property">@fromDOM</span>: (element, event, selector, transform) -&gt;
-    [eventTransformer, selector] = [selector, <span class="literal">null</span>] <span class="keyword">if</span> isFunction(selector)
+    [transform, selector] = [selector, <span class="literal">null</span>] <span class="keyword">if</span> isFunction(selector)
 
     <span class="property">@fromBinder</span> (handler) =&gt;
       element.<span class="literal">on</span>(event, selector, handler)
       =&gt; element.<span class="literal">off</span>(event, selector, handler)
-    , eventTransformer</pre></div>
-
-
-
+    , transform</pre></div>
+        
+      
+        
         <h2>Stream</h2>
 
-
-
-
+        
+      
+        
         <p>Class <code>Stream</code> represents a disrete sequence of values, coupled with time.  So
 it uses the appropriate dispatcher to do it.</p>
 <p><code>Dispatcher</code> activates the listeners when a first sink is added and then just
 adds them. On each event it just pushes it to all sinks.</p>
 
-
+        
           <div class='highlight'><pre><span class="class"><span class="keyword">class</span> <span class="title">Dispatcher</span></span>
   constructor: (subscribe, handler) -&gt;
     subscribe ?= (event) -&gt;
@@ -316,61 +316,61 @@ adds them. On each event it just pushes it to all sinks.</p>
 <span class="class"><span class="keyword">class</span> <span class="title">Stream</span> <span class="keyword">extends</span> <span class="title">Observable</span></span>
   dispatched: (subscribe, handler)-&gt;
     <span class="keyword">new</span> Dispatcher(subscribe, handler).subscribe</pre></div>
-
-
-
+        
+      
+        
         <p>For this class we can have <code>flatMap</code> aka <code>bind</code>. In our case it&#39;s <code>flatMapAll</code>:</p>
 
-
+        
           <div class='highlight'><pre>  flatMap: (args...)-&gt; <span class="property">@flatMapAll</span>(args...)</pre></div>
-
-
-
+        
+      
+        
         <p>Having this we can easily have <code>merge</code>:</p>
 
-
+        
           <div class='highlight'><pre>  merge: (others...)-&gt;
     Stream.fromList(map method(<span class="string">"changes"</span>), [@, others...]).flatten()
   flatten: -&gt; <span class="property">@flatMap</span>(id)</pre></div>
-
-
-
+        
+      
+        
         <h3>Cross-methods</h3>
 <p>To make it transparent for a user, is this stream or box, we proxy the box
 methods to box. First we define a conversion method with an optional starting
 value.</p>
 
-
+        
           <div class='highlight'><pre>  box: (initial = Nothing)-&gt;
     initial = toMaybe(initial)
     <span class="keyword">new</span> Box (sink)=&gt;
       sink initial <span class="keyword">unless</span> initial.isEmpty()
       <span class="property">@subscribe</span> (event)-&gt; sink event
   changes: -&gt; @</pre></div>
-
-
-
+        
+      
+        
         <p>We could also define a new stream with initial value merged to the beginning,
 but the current code is simple enough.</p>
 <p>All proxy methods are trivial.</p>
 
-
+        
           <div class='highlight'><pre>  zipWith: (others..., f)-&gt; <span class="property">@box</span>().zipWith(others..., f)
   <span class="keyword">and</span>: (others...)-&gt; <span class="property">@box</span>().<span class="keyword">and</span>(others...)
   <span class="keyword">or</span>: (others...)-&gt; <span class="property">@box</span>().<span class="keyword">or</span>(others...)
   <span class="keyword">not</span>: -&gt; <span class="property">@box</span>().<span class="keyword">not</span>()</pre></div>
-
-
-
+        
+      
+        
         <h2>Box</h2>
 
-
-
-
+        
+      
+        
         <p>Class <code>Box</code> represents continuous value that changes with time. So it uses a
 slightly tweaked dispatcher.</p>
 
-
+        
           <div class='highlight'><pre><span class="class"><span class="keyword">class</span> <span class="title">BoxDispatcher</span> <span class="keyword">extends</span> <span class="title">Dispatcher</span></span>
   constructor: (subscribe, handler) -&gt;
     <span class="keyword">super</span> subscribe, handler
@@ -396,28 +396,28 @@ slightly tweaked dispatcher.</p>
 <span class="class"><span class="keyword">class</span> <span class="title">Box</span> <span class="keyword">extends</span> <span class="title">Observable</span></span>
   dispatched: (subscribe, handler)-&gt;
     <span class="keyword">new</span> BoxDispatcher(subscribe, handler).subscribe</pre></div>
-
-
-
+        
+      
+        
         <p>For this class we can have <code>flatMap</code> aka <code>bind</code>. In our case it&#39;s <code>flatMapAll</code>:</p>
 
-
+        
           <div class='highlight'><pre>  flatMap: (args...)-&gt; <span class="property">@flatMapLast</span>(args...)</pre></div>
-
-
-
+        
+      
+        
         <p>With this <code>flatMap</code> we can define a glorious <code>map2</code>, also known as <code>zipWith</code>
 for two boxes.</p>
 
-
+        
           <div class='highlight'><pre>  map2: (other, f)-&gt;
     <span class="property">@flatMap</span> (x)-&gt; other.box().map (y)-&gt; f(x, y)</pre></div>
-
-
-
+        
+      
+        
         <p>Having this, <code>zipWith</code> is easy:</p>
 
-
+        
           <div class='highlight'><pre>  <span class="property">@sequence</span>: (boxes)-&gt;
     foldl boxes, <span class="property">@unit</span>([]), (acc, box)-&gt;
       acc.map2 box, (memo, value)-&gt;
@@ -426,46 +426,46 @@ for two boxes.</p>
     <span class="property">@sequence</span>(boxes).map uncurry f
   zipWith: (others..., f)-&gt;
     Box.zipWith [@, others...], f</pre></div>
-
-
-
+        
+      
+        
         <p>Helpful would be to define boolean algebra over boxes:</p>
 
-
+        
           <div class='highlight'><pre>  <span class="keyword">and</span>: (others...)-&gt; <span class="property">@zipWith</span> others..., (a, b)-&gt; a &amp;&amp; b
   <span class="keyword">or</span>: (others...)-&gt; <span class="property">@zipWith</span> others..., (a, b)-&gt; a || b
   <span class="keyword">not</span>: -&gt; <span class="property">@map</span> (x)-&gt; !x</pre></div>
-
-
-
+        
+      
+        
         <h3>Cross-methods</h3>
 <p>To convert <code>Box</code> into <code>Stream</code> we take it&#39;s changes.</p>
 
-
+        
           <div class='highlight'><pre>  changes: -&gt;
     <span class="keyword">new</span> Stream (sink)=&gt;
       <span class="property">@subscribe</span> (event)-&gt; sink event
   box: -&gt; @</pre></div>
-
-
-
+        
+      
+        
         <p>Here are the proxy methods:</p>
 
-
+        
           <div class='highlight'><pre>  merge: (others...)-&gt; <span class="property">@changes</span>().merge(others...)</pre></div>
-
-
-
+        
+      
+        
         <h2>Helpers</h2>
 
-
-
-
+        
+      
+        
         <h3>Maybe</h3>
 <p>We&#39;ll slightly extend the <code>Maybe</code> idiom to support error values. Now it&#39;s a
 sum of <code>Maybe</code> and <code>Either</code> in some sence.</p>
 
-
+        
           <div class='highlight'><pre><span class="class"><span class="keyword">class</span> <span class="title">Maybe</span></span>
 
 <span class="class"><span class="keyword">class</span> <span class="title">Just</span> <span class="keyword">extends</span> <span class="title">Maybe</span></span>
@@ -491,22 +491,22 @@ sum of <code>Maybe</code> and <code>Either</code> in some sence.</p>
 Nothing = <span class="keyword">new</span> <span class="class"><span class="keyword">class</span> <span class="keyword">extends</span> <span class="title">Bad</span></span>
   constructor: -&gt;
   inspect: -&gt; <span class="string">"Nothing"</span></pre></div>
-
-
-
+        
+      
+        
         <p>Type aliases for events:</p>
 
-
+        
           <div class='highlight'><pre>[Event, Fire, Error, Stop] = [Maybe, Just, Wrong, Nothing]
 <span class="function"><span class="title">toEvent</span></span> = (x) -&gt; <span class="keyword">if</span> x <span class="keyword">instanceof</span> Event <span class="keyword">then</span> x <span class="keyword">else</span> <span class="keyword">new</span> Fire x
 <span class="function"><span class="title">toError</span></span> = (x) -&gt; <span class="keyword">if</span> x <span class="keyword">instanceof</span> Event <span class="keyword">then</span> x <span class="keyword">else</span> <span class="keyword">new</span> Error x</pre></div>
-
-
-
+        
+      
+        
         <h3>Our small underscore</h3>
 <p>We need some simple helper functions.</p>
 
-
+        
           <div class='highlight'><pre><span class="function"><span class="title">empty</span></span> = (xs)-&gt; xs.length == <span class="number">0</span>
 <span class="function"><span class="title">method</span></span> = (meth)-&gt; (obj)-&gt; obj[meth]()
 <span class="function"><span class="title">nop</span></span> = -&gt;
@@ -539,17 +539,17 @@ Nothing = <span class="keyword">new</span> <span class="class"><span class="keyw
 <span class="function"><span class="title">toArray</span></span> = (x) -&gt; <span class="keyword">if</span> x <span class="keyword">instanceof</span> Array <span class="keyword">then</span> x <span class="keyword">else</span> [x]
 <span class="function"><span class="title">toMaybe</span></span> = (x) -&gt;
   <span class="keyword">if</span> x <span class="keyword">instanceof</span> Maybe <span class="keyword">then</span> x <span class="keyword">else</span> <span class="keyword">new</span> Just x</pre></div>
-
-
-
+        
+      
+        
         <h2>Exports</h2>
 
-
-
-
+        
+      
+        
         <p>We now need to make our objects usable outside:</p>
 
-
+        
           <div class='highlight'><pre><span class="keyword">for</span> name, value <span class="keyword">of</span> {Stream, Box, Event, Fire, Error, Stop,
                                  Maybe, Just, Wrong, Nothing}
   Jnoid[name] = value
@@ -560,18 +560,18 @@ Nothing = <span class="keyword">new</span> <span class="class"><span class="keyw
   module.exports = Jnoid
 <span class="keyword">else</span>
   <span class="property">@Jnoid</span> = Jnoid</pre></div>
-
-
-
+        
+      
+        
         <h2>Conclusion</h2>
 
-
-
-
+        
+      
+        
         <p>Have fun!</p>
 
-
-
+        
+      
       <div class="fleur">h</div>
     </div>
   </div>
