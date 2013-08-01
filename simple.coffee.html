@@ -10,55 +10,60 @@
 <body>
   <div id="container">
     <div id="background"></div>
-
+    
       <ul id="jump_to">
         <li>
           <a class="large" href="javascript:void(0);">Jump To &hellip;</a>
           <a class="small" href="javascript:void(0);">+</a>
           <div id="jump_wrapper">
           <div id="jump_page">
-
-
-              <a class="source" href="index.html">
-                index.md
+            
+              
+              <a class="source" href="README.html">
+                README.md
               </a>
-
+            
+              
               <a class="source" href="simple.coffee.html">
-                examples/simple.coffee.md
+                simple.coffee.md
               </a>
-
-
+            
+              
+              <a class="source" href="jnoid.coffee.html">
+                jnoid.coffee.md
+              </a>
+            
           </div>
         </li>
       </ul>
-
+    
     <ul class="sections">
-
-
-
+        
+        
+        
         <li id="section-1">
             <div class="annotation">
-
+              
               <div class="pilwrap for-h1">
                 <a class="pilcrow" href="#section-1">&#182;</a>
               </div>
               <h1>Simple example</h1>
 
             </div>
-
+            
         </li>
-
-
+        
+        
         <li id="section-2">
             <div class="annotation">
-
+              
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-2">&#182;</a>
               </div>
               <p>Here is a template for the form which required for the current example</p>
 
             </div>
-
+            
             <div class="content"><div class='highlight'><pre>template('
     &lt;form class="form-horizontal" action="/register" method="get"&gt;
       &lt;div class="control-group" id="login"&gt;
@@ -82,20 +87,20 @@
       &lt;/div&gt;
     &lt;/form&gt;
 ')</pre></div></div>
-
+            
         </li>
-
-
+        
+        
         <li id="section-3">
             <div class="annotation">
-
+              
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-3">&#182;</a>
               </div>
               <p>So lets start with the example</p>
 
             </div>
-
+            
             <div class="content"><div class='highlight'><pre><span class="function"><span class="title">textFieldValue</span></span> = (textField) -&gt;
   Jnoid.Stream.fromDOM(textField, <span class="string">"keyup input"</span>).map((e) -&gt;
     $(e.target).val()
@@ -142,43 +147,47 @@ availMessages = login.filter(nonEmpty).map(toLoginCheck).flatMap(validateAjax)
 loginMessages = login.map(validateLogin).merge(availMessages)
 fullnameMessages = fullname.map(validateFullname)
 buttonEnabled = loginMessages.map(isGood).<span class="keyword">and</span>(fullnameMessages.map(isGood))</pre></div></div>
-
+            
         </li>
-
-
+        
+        
         <li id="section-4">
             <div class="annotation">
-
+              
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-4">&#182;</a>
               </div>
               <p>The <code>setAttribute</code> is a helper, but it not in the library yet.</p>
 
             </div>
-
+            
             <div class="content"><div class='highlight'><pre><span class="function"><span class="title">setAttribute</span></span> = (element, attribute) -&gt;
   (value) -&gt;
-    $(element).attr attribute, value</pre></div></div>
+    $(element).attr attribute, value
 
+<span class="function"><span class="title">setText</span></span> = (element) -&gt;
+  (value) -&gt;
+    $(element).text value</pre></div></div>
+            
         </li>
-
-
+        
+        
         <li id="section-5">
             <div class="annotation">
-
+              
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-5">&#182;</a>
               </div>
               <p>So, here is the application</p>
 
             </div>
-
-            <div class="content"><div class='highlight'><pre>loginMessages.onValue $(<span class="string">"#login .help-block"</span>).text
-fullnameMessages.onValue $(<span class="string">"#fullname .help-block"</span>).text
+            
+            <div class="content"><div class='highlight'><pre>loginMessages.onValue setText $(<span class="string">"#login .help-block"</span>)
+fullnameMessages.onValue setText $(<span class="string">"#fullname .help-block"</span>)
 buttonEnabled.<span class="keyword">not</span>().onValue setAttribute $(<span class="string">"#submit"</span>), <span class="string">"disabled"</span></pre></div></div>
-
+            
         </li>
-
+        
     </ul>
   </div>
 </body>

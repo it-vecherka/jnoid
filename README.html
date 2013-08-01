@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+  <title>Jnoid</title>
+  <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+  <meta name="viewport" content="width=device-width, target-densitydpi=160dpi, initial-scale=1.0; maximum-scale=1.0; user-scalable=0;">
+  <link rel="stylesheet" media="all" href="docco.css" />
+</head>
+<body>
+  <div id="container">
+    <div id="background"></div>
+    
+      <ul id="jump_to">
+        <li>
+          <a class="large" href="javascript:void(0);">Jump To &hellip;</a>
+          <a class="small" href="javascript:void(0);">+</a>
+          <div id="jump_wrapper">
+          <div id="jump_page">
+            
+              
+              <a class="source" href="README.html">
+                README.md
+              </a>
+            
+              
+              <a class="source" href="simple.coffee.html">
+                simple.coffee.md
+              </a>
+            
+              
+              <a class="source" href="jnoid.coffee.html">
+                jnoid.coffee.md
+              </a>
+            
+          </div>
+        </li>
+      </ul>
+    
+    <ul class="sections">
+        
+        
+        
+        <li id="section-1">
+            <div class="annotation">
+              
+              <div class="pilwrap for-h1">
+                <a class="pilcrow" href="#section-1">&#182;</a>
+              </div>
+              <h1>Jnoid</h1>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-2">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-2">&#182;</a>
+              </div>
+              <p>This is a functional reactive programming library in Coffescript to use in
+browser or Node.js applications. It owes the idea to Bacon.js, but should
+describe the domain in proper terms, have less operations in primitives and be
+shorter and simpler.</p>
+<pre><code class="lang-coffeescript">Jnoid = {
+VERSION: &quot;0.0.1&quot;
+}</code></pre>
+<p>The core idea is having an abstraction of <code>Stream</code> which is a discrete
+sequence of values and an abstraction of a <code>Box</code> which is a continous
+time-varying value, both of which you can subscribe on.</p>
+<h2>Maybe and Events</h2>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-3">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-3">&#182;</a>
+              </div>
+              <p>We&#39;ll slightly extend the famous <code>Maybe</code> idiom to support error values. Now
+it&#39;s a sum of <code>Maybe</code> and <code>Either</code> and can be described as <code>Maybe = Just x |
+Wrong y | Nothing</code>.</p>
+<pre><code class="lang-coffeescript">class Maybe
+
+class Just extends Maybe
+constructor: (@value) -&gt;
+getOrElse: -&gt; @value
+filter: (f) -&gt; if @test(f) then @ else Nothing
+test: (f) -&gt; f @value
+map: (f) -&gt; new Just(f @value)
+isEmpty: -&gt; false
+inspect: -&gt; &quot;Just #{@value}&quot;
+
+class Bad extends Maybe
+getOrElse: (some)-&gt; some
+filter: (f) -&gt; @
+test: (f) -&gt; true
+map: (f) -&gt; @
+isEmpty: -&gt; true
+
+class Wrong extends Bad
+constructor: (@error) -&gt;
+inspect: -&gt; &quot;Wrong #{@error}&quot;
+
+Nothing = new class extends Bad
+constructor: -&gt;
+inspect: -&gt; &quot;Nothing&quot;</code></pre>
+<p><code>Event</code> class will be just a type alias for it.</p>
+<pre><code class="lang-coffeescript">[Event, Fire, Error, Stop] = [Maybe, Just, Wrong, Nothing]
+toEvent = (x) -&gt; if x instanceof Event then x else new Fire x
+toError = (x) -&gt; if x instanceof Event then x else new Error x</code></pre>
+<h2>Observable</h2>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-4">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-4">&#182;</a>
+              </div>
+              <p>The point is that we can abstract from <code>Stream</code> and <code>Box</code> and define a common
+behavior, calling it <code>Observable</code>.</p>
+<p>Class <code>Observable</code> will be determined via a <code>subscribe</code> function. This
+function should receive a subscriber or sink function as an argument and
+call it whenever event is fired. This enables push semantics for <code>Stream</code>
+and <code>Box</code>.</p>
+<p>There are two ways to unsubscribe. First is to call function that subscribe
+returns. Second is return <code>Reply.stop</code> from event listener.</p>
+<pre><code class="lang-coffeescript">class Observable
+constructor: (subscribe)-&gt;
+@subscribe = @dispatched subscribe</code></pre>
+<p><code>dispathed</code> is a function that makes <code>Observable</code> abstract and will hold the
+actual implementation differences between <code>Stream</code> and <code>Box</code>. If you are
+interested in <code>dispatched</code>, check it&#39;s implementations there.</p>
+<pre><code class="lang-coffeescript">dispatched: fail</code></pre>
+<p>A basic ways to listen to Observable are <code>onValue</code> and <code>onError</code>. While
+<code>subscribe</code> sends raw events, <code>onValue</code> unwraps them in case they hold values
+and deliver them to the subscriber.</p>
+<pre><code class="lang-coffeescript">onValue: (f) -&gt;
+@subscribe (event) -&gt;
+event.map((v)-&gt; f(v)).getOrElse(Reply.more)</code></pre>
+<p><code>onError</code> does roughly the same as <code>onValue</code>, but is selecting errors and
+unwraps them.</p>
+<pre><code class="lang-coffeescript">onError: (f) -&gt;
+@subscribe (event) -&gt;
+if event instanceof Error
+f event.error
+else
+Reply.more</code></pre>
+<p>We can now define basic transforms. Start with <code>map</code> and <code>filter</code>. We can
+see common pattern there, it&#39;s abstracted in <code>withHandler</code>.</p>
+<pre><code class="lang-coffeescript">withHandler: (handler)-&gt;
+new @constructor @dispatched(@subscribe, handler)
+
+map: (f)-&gt;
+@withHandler (event)-&gt; @push event.map(f)
+
+filter: (f)-&gt;
+@withHandler (event)-&gt; if event.test(f) then @push event else Reply.more</code></pre>
+<p>A useful combinator is <code>recover</code>, with will turn errors into regular
+events using transform function.</p>
+<pre><code class="lang-coffeescript">recover: (f)-&gt;
+@withHandler (event) -&gt;
+if event instanceof Error
+@push new Fire f(event.error)
+else
+@push event</code></pre>
+<p>The most powerful combinator in our case is <code>flatMap</code>. It accepts a function
+that turns each of the values in observable to a new observable. We then return
+a new Observable that will combine them.</p>
+<p>The first way to combine them is to just collect all the events from the
+spawned childen. This matches the semantics of <code>Stream</code> and will allow us to
+produce merge.</p>
+<p>Another way to combine events is to unsubscribe all the existing children, when
+a new event occurs on root, then spawn a new one and just listen to it. You can
+think of it as swiching from one observable to another one. This matches the
+semantics of <code>Box</code> and will allow us to produce <code>zip</code>.</p>
+<pre><code class="lang-coffeescript">flatMapGeneric: (f, lastOnly) -&gt;
+root = this
+new @constructor (sink) -&gt;
+children = []
+rootStop = false
+unsubRoot = -&gt;
+unsubChildren = -&gt;
+unsubChild() for unsubChild in children
+children = []
+unbind = -&gt;
+unsubChildren()
+unsubRoot()
+checkStop = -&gt;
+if rootStop and (children.length == 0)
+sink Stop
+spawner = (event) -&gt;
+if event == Stop
+rootStop = true
+checkStop()
+else
+unsubChildren() if lastOnly
+if event instanceof Error
+sink event
+else
+child = f event.value
+unsubChild = undefined
+childStopped = false
+removeChild = -&gt;
+remove(unsubChild, children) if unsubChild?
+checkStop()
+handler = (event) -&gt;
+if event == Stop
+removeChild()
+childStopped = true
+Reply.stop
+else
+tap sink(event), (reply)-&gt;
+unbind() if reply == Reply.stop
+unsubChild = child.subscribe handler
+children.push unsubChild if not childStopped
+unsubRoot = root.subscribe(spawner)
+unbind
+
+flatMapAll: (f)-&gt; @flatMapGeneric(f, false)
+flatMapLast: (f)-&gt; @flatMapGeneric(f, true)</code></pre>
+<p>We can also define <code>skipDuplicates</code> which is extremely useful.</p>
+<pre><code class="lang-coffeescript">withStateMachine: (initState, f) -&gt;
+state = initState
+@withHandler (event) -&gt;
+[newState, outputs] = f(state, event)
+state = newState
+stopped = any outputs,
+(output)=&gt; @push(output) == Reply.stop
+if stopped then Reply.stop else Reply.more
+
+skipDuplicates: (isEqual = (a, b) -&gt; a is b) -&gt;
+@withStateMachine Nothing, (prev, event) -&gt;
+event.map((v)-&gt;
+if prev == Nothing || !prev.test((p)-&gt; isEqual(v, p))
+[new Just(v), [event]]
+else
+[prev, []]
+).getOrElse [prev, [event]]</code></pre>
+<h2>How to build observables</h2>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-5">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-5">&#182;</a>
+              </div>
+              <p>The basic ways to build an observable are <code>nothing</code>, <code>unit</code> and <code>error</code>. In
+<code>Stream</code> semantics they mean <code>never</code>, <code>once</code> and <code>error</code>, in <code>Box</code> semantics
+they mean <code>empty</code>, <code>always</code> and <code>error</code>. We won&#39;t create the aliases and give
+these names to get you the feel of what they mean.</p>
+<pre><code class="lang-coffeescript">@fromList: (values, wrapper = toEvent)-&gt;
+new @ (sink) -&gt;
+sink event for event in map wrapper, values
+sink Stop
+
+@nothing: -&gt; @fromList []
+@unit: (value)-&gt; @fromList [value]
+@error: (value)-&gt; @fromList [value], toError</code></pre>
+<p><code>fromBinder</code> just adds a syntax sugar for us to easily define more
+sophisticated constructors.</p>
+<pre><code class="lang-coffeescript">@fromBinder: (binder, transform = id) -&gt;
+new @ (sink) -&gt;
+unbinder = binder (args...) -&gt;
+events = toArray transform args...
+for event in map toEvent, events
+tap sink(event), (reply)-&gt;
+unbinder() if event == Stop or reply == Reply.stop</code></pre>
+<p><code>poll</code> polls a function within given interval.</p>
+<pre><code class="lang-coffeescript">@poll: (delay, poll) -&gt;
+@fromBinder (handler) -&gt;
+i = setInterval(handler, delay)
+-&gt; clearInterval(i)
+, poll</code></pre>
+<p><code>interval</code> and <code>later</code> send a fixed list of events or one event
+respectively within given interval.</p>
+<pre><code class="lang-coffeescript">@interval: (delay, list)-&gt;
+index = 0
+@poll delay, -&gt;
+value = list[index++]
+if index &lt; list.length
+value
+else if index == list.length
+[value, Stop]
+else
+Stop
+
+@later: (delay, value)-&gt;
+@interval(delay, [value])</code></pre>
+<p>Let&#39;s also define a function that works on promises, e.g., ajax. The
+resource releasing here for ajax is abort. We should also handle promise
+errors here. In a transform function we attach end to our stream.</p>
+<pre><code class="lang-coffeescript">@fromPromise: (promise) -&gt;
+@fromBinder (handler) -&gt;
+promise.then handler, (e) -&gt;
+handler new Error e
+-&gt; promise.abort?()
+, (value) -&gt; [value, Stop]</code></pre>
+<p>Finally let&#39;s define the way to receive events from DOM objects. We&#39;ll do
+it assuming we&#39;re called in jQuery/Zepto fashion.</p>
+<p>We allow to override <code>transform</code> - by default it&#39;ll take the first
+argument, which is usually a jQuery event. We use <code>on</code> to subscribe and
+<code>off</code> to unsubscribe.</p>
+<pre><code class="lang-coffeescript">@fromDOM: (element, event, selector, transform) -&gt;
+[transform, selector] = [selector, null] if isFunction(selector)
+
+@fromBinder (handler) =&gt;
+element.on(event, selector, handler)
+=&gt; element.off(event, selector, handler)
+, transform</code></pre>
+<h2>Stream</h2>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-6">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-6">&#182;</a>
+              </div>
+              <p>Class <code>Stream</code> represents a disrete sequence of values, coupled with time.  So
+it uses the appropriate dispatcher to do it.</p>
+<p><code>Dispatcher</code> activates the listeners when a first sink is added and then just
+adds them. On each event it just pushes it to all sinks.</p>
+<pre><code class="lang-coffeescript">class StreamDispatcher
+constructor: (subscribe, handler) -&gt;
+subscribe ?= (event) -&gt;
+sinks = []
+@push = (event) =&gt;
+for sink in sinks
+tap sink(event), (reply)-&gt;
+remove sink, sinks if reply == Reply.stop
+handler ?= (event) -&gt; @push event
+@handler = (event) =&gt; handler.apply(this, [event])
+@subscribe = (sink) =&gt;
+sinks.push(sink)
+unsubSelf = subscribe @handler if sinks.length == 1
+-&gt;
+remove sink, sinks
+unsubSelf?() unless any sinks</code></pre>
+<p>To have <code>Stream</code> class we just need to override abstract <code>dispatched</code> method
+from the base class to use <code>StreamDispatcher</code>.</p>
+<pre><code class="lang-coffeescript">class Stream extends Observable
+dispatched: (subscribe, handler)-&gt;
+new StreamDispatcher(subscribe, handler).subscribe</code></pre>
+<p>For this class we can have <code>flatMap</code> aka <code>bind</code>. In our case it&#39;s <code>flatMapAll</code>.</p>
+<pre><code class="lang-coffeescript">flatMap: (args...)-&gt; @flatMapAll(args...)</code></pre>
+<p>Having this we can easily have <code>merge</code>.</p>
+<pre><code class="lang-coffeescript">merge: (others...)-&gt;
+Stream.fromList(map method(&quot;changes&quot;), [@, others...]).flatten()
+flatten: -&gt; @flatMap(id)</code></pre>
+<h2>Using Stream when we need Box</h2>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-7">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-7">&#182;</a>
+              </div>
+              <p>To make it transparent for a user, is this stream or box, we proxy the box
+methods to box. First we define a conversion method with an optional starting
+value.</p>
+<pre><code class="lang-coffeescript">box: (initial = Nothing)-&gt;
+initial = toMaybe(initial)
+new Box (sink)=&gt;
+sink initial unless initial.isEmpty()
+@subscribe (event)-&gt; sink event
+changes: -&gt; @</code></pre>
+<p>We could also define a new stream with initial value merged to the beginning,
+but the current code is simple enough.</p>
+<p>All proxy methods are trivial.</p>
+<pre><code class="lang-coffeescript">zipWith: (others..., f)-&gt; @box().zipWith(others..., f)
+and: (others...)-&gt; @box().and(others...)
+or: (others...)-&gt; @box().or(others...)
+not: -&gt; @box().not()</code></pre>
+<h2>Box</h2>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-8">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-8">&#182;</a>
+              </div>
+              <p>Class <code>Box</code> represents continuous value that changes with time. So we need a
+slightly tweaked dispatcher. The difference is that it holds the current
+value and sends it to each new subscriber. Another difference is that even when
+the Box is ended, it still sends the last value and then immediately sends stop</p>
+<pre><code class="lang-coffeescript">class BoxDispatcher extends StreamDispatcher
+constructor: (subscribe, handler) -&gt;
+super subscribe, handler
+current = Nothing
+push = @push
+subscribe = @subscribe
+stopped = false
+
+@push = (event) =&gt;
+event.map((x) -&gt; current = new Just x)
+stopped = true if event == Stop
+push.apply(this, [event])
+@subscribe = (sink) =&gt;
+reply = current.map((v)-&gt; sink new Fire v)
+if reply.getOrElse(Reply.more) == Reply.stop
+nop
+else if stopped
+sink Stop
+nop
+else
+subscribe.apply(@, [sink])</code></pre>
+<p>Now class <code>Box</code> is going to use that dispatcher.</p>
+<pre><code class="lang-coffeescript">class Box extends Observable
+dispatched: (subscribe, handler)-&gt;
+new BoxDispatcher(subscribe, handler).subscribe</code></pre>
+<p>For this class we can have <code>flatMap</code> aka <code>bind</code>. In our case it&#39;s <code>flatMapLast</code>.</p>
+<pre><code class="lang-coffeescript">flatMap: (args...)-&gt; @flatMapLast(args...)</code></pre>
+<p>With this <code>flatMap</code> we can define a glorious <code>map2</code>, also known as <code>zipWith</code>
+for two boxes.</p>
+<pre><code class="lang-coffeescript">map2: (other, f)-&gt;
+@flatMap (x)-&gt; other.box().map (y)-&gt; f(x, y)</code></pre>
+<p>Having this, <code>zipWith</code> is easy.</p>
+<pre><code class="lang-coffeescript">@sequence: (boxes)-&gt;
+foldl boxes, @unit([]), (acc, box)-&gt;
+acc.map2 box, (memo, value)-&gt; append memo, value
+@zipWith: (boxes, f)-&gt;
+@sequence(boxes).map uncurry f
+zipWith: (others..., f)-&gt;
+Box.zipWith [@, others...], f</code></pre>
+<p>Helpful would be to define boolean algebra over boxes.</p>
+<pre><code class="lang-coffeescript">and: (others...)-&gt; @zipWith others..., (a, b)-&gt; a &amp;&amp; b
+or: (others...)-&gt; @zipWith others..., (a, b)-&gt; a || b
+not: -&gt; @map (x)-&gt; !x</code></pre>
+<h2>Using Box when we need Stream</h2>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-9">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-9">&#182;</a>
+              </div>
+              <p>To convert <code>Box</code> into <code>Stream</code> we take it&#39;s changes.</p>
+<pre><code class="lang-coffeescript">changes: -&gt;
+new Stream (sink)=&gt;
+@subscribe (event)-&gt; sink event
+box: -&gt; @</code></pre>
+<p>Here are the proxy methods.</p>
+<pre><code class="lang-coffeescript">merge: (others...)-&gt; @changes().merge(others...)</code></pre>
+<h2>Helpers</h2>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-10">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-10">&#182;</a>
+              </div>
+              <p>Pretty trivial special values to return from event listeners.</p>
+<pre><code class="lang-coffeescript">Reply =
+stop: &quot;&lt;stop&gt;&quot;
+more: &quot;&lt;more&gt;&quot;</code></pre>
+<p>We need some simple helper functions.</p>
+<pre><code class="lang-coffeescript">empty = (xs)-&gt; xs.length == 0
+method = (meth)-&gt; (obj)-&gt; obj[meth]()
+nop = -&gt;
+id = (x)-&gt; x
+fail = -&gt; throw &quot;method not implemented&quot;
+head = (xs) -&gt; xs[0]
+tail = (xs) -&gt; xs[1...xs.length]
+uncurry = (f) -&gt; (args)-&gt; f(args...)
+map = (f, xs) -&gt; f(x) for x in xs
+foldl = (xs, seed, f) -&gt;
+for x in xs
+seed = f(seed, x)
+seed
+tap = (x, f) -&gt;
+f(x)
+x
+remove = (x, xs) -&gt;
+i = xs.indexOf(x)
+xs.splice(i, 1) if i &gt;= 0
+all = (xs, f = id) -&gt;
+for x in xs
+return false if not f(x)
+return true
+any = (xs, f = id) -&gt;
+for x in xs
+return true if f(x)
+return false
+copyArray = (xs)-&gt; xs.slice()
+append = (xs, x)-&gt; tap copyArray(xs), (copy)-&gt; copy.push x
+isFunction = (f) -&gt; typeof f == &quot;function&quot;
+toArray = (x) -&gt; if x instanceof Array then x else [x]
+toMaybe = (x) -&gt;
+if x instanceof Maybe then x else new Just x</code></pre>
+<h2>Exports</h2>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-11">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-11">&#182;</a>
+              </div>
+              <p>We now need to make our objects usable outside.</p>
+<pre><code class="lang-coffeescript">for name, value of {Stream, Box, Event, Fire, Error, Stop,
+Maybe, Just, Wrong, Nothing}
+Jnoid[name] = value
+
+if define?.amd
+define [], -&gt; Jnoid
+else if module?.exports
+module.exports = Jnoid
+else
+@Jnoid = Jnoid</code></pre>
+<h2>Conclusion</h2>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-12">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-12">&#182;</a>
+              </div>
+              <p>Have fun!</p>
+
+            </div>
+            
+        </li>
+        
+    </ul>
+  </div>
+</body>
+</html>
