@@ -1,7 +1,28 @@
 fs = require 'fs'
+fs = require 'fs'
+exec = require('child_process').exec
 
-task "doc", "generate documentation", ->
-  exec "docco -l linear jnoid.coffee.md"
+task "docs", "generate documentation", ->
+  console.log "It is still doesn't work perfectly. Just for debugging. Please do it manually"
+  process.exit 1
+
+  exec "docco README.md jnoid.coffee.md examples/*.coffee.md"
+  fs.writeFileSync "#{__dirname}/docs/index.html", '
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Jnoid simple example</title>
+  <meta http-equiv="refresh" content="0; url=README.html">
+</head>
+<body>
+Redirecting to <a href="README.html">README.html</a>
+</body>
+</html>
+  '
+  exec "cd docs && git add --all && git commit -m 'Re-generated documentation.' && git push origin gh-pages"
+  exec "git submodule sync"
+  console.log "Documentation has been updated."
+
 
 # Until GitHub has proper Literate CoffeeScript highlighting support, let's
 # manually futz the README ourselves.
