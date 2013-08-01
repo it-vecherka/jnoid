@@ -82,8 +82,13 @@ The `setAttribute` is a helper, but it not in the library yet.
       (value) ->
         $(element).attr attribute, value
 
+    setText = (element) ->
+      (value) ->
+        $(element).text value
+
+
 So, here is the application
 
-    loginMessages.onValue $("#login .help-block").text
-    fullnameMessages.onValue $("#fullname .help-block").text
+    loginMessages.onValue setText $("#login .help-block")
+    fullnameMessages.onValue setText $("#fullname .help-block")
     buttonEnabled.not().onValue setAttribute $("#submit"), "disabled"
