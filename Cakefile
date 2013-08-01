@@ -17,7 +17,7 @@ Redirecting to <a href="README.html">README.html</a>
 </html>
   '
   exec "cd docs && git add --all && git commit -m 'Re-generated documentation.' && git push origin gh-pages"
-  exec "git submodule update"
+  exec "git submodule sync"
   console.log "Documentation has been updated."
 
 
