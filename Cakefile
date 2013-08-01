@@ -3,6 +3,9 @@ fs = require 'fs'
 exec = require('child_process').exec
 
 task "docs", "generate documentation", ->
+  console.log "It is still doesn't work perfectly. Just for debugging. Please do it manually"
+  process.exit 1
+
   exec "docco README.md jnoid.coffee.md examples/*.coffee.md"
   fs.writeFileSync "#{__dirname}/docs/index.html", '
 <!DOCTYPE html>
