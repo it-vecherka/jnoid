@@ -8,9 +8,23 @@ argv = require('optimist').argv
 exampleName = argv._[0] or throw "Specify the example name. Available examples: #{examplesList}"
 app = express()
 
+readFile = (filename, coffee = true)->
+  source = fs.readFileSync(fs.realpathSync("#{__dirname}/#{filename}", "utf-8")).toString()
+  if coffee then coffeescript.compile source, literate: true else source
+
+readCoffeeFile = (filename)-> readFile filename, true
+readRegularFile = (filename)-> readFile filename, false
+
+sendData = (res, data, contentType)->
+  res.set 'Content-Type', contentType
+  res.send data
+
+sendHTML =   (res, data, handler = (i)-> i )-> sendData res, handler(data), 'text/html'
+sendJS =     (res, data, handler = (i)-> i )-> sendData res, handler(data), 'application/javascript'
+sendCoffee = (res, data, handler = (i)-> i )-> sendJS   res, handler(data)
+
 app.get '/', (req, res)->
-  res.set('Content-Type', 'text/html')
-  res.send '
+  sendHTML res, '
 <!DOCTYPE html>
 <html>
 <head>
@@ -47,14 +61,10 @@ app.get '/', (req, res)->
 '
 
 app.get '/jnoid.js', (req, res)->
-  source = fs.readFileSync(fs.realpathSync("#{__dirname}/jnoid.coffee.md", "utf-8")).toString()
-  res.set('Content-Type', 'text/javascript')
-  res.send coffeescript.compile source, literate: true
+  sendCoffee res, "jnoid.coffee.md", readCoffeeFile
 
 app.get '/example.js', (req, res)->
-  source = fs.readFileSync(fs.realpathSync("#{__dirname}/examples/#{exampleName}.coffee.md", "utf-8")).toString()
-  res.set('Content-Type', 'text/javascript')
-  res.send coffeescript.compile source, literate: true
+  sendCoffee res, "examples/#{exampleName}.coffee.md", readCoffeeFile
 
 app.get '/check-login/:login', (req, res)->
   if _.contains ['Peter', 'Jack', 'Jackson', 'Samuel'], req.params.login
