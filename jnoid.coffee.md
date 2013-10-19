@@ -196,6 +196,12 @@ We can also define `skipDuplicates` which is extremely useful.
               [prev, []]
           ).getOrElse [prev, [event]]
 
+Always good in UI there is an option to `debounce`:
+
+      debounce: (delay)->
+        @flatMapLast (value)=>
+          @constructor.later delay, value
+
 How to build observables
 ------------------------
 
