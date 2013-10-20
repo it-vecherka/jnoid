@@ -196,6 +196,13 @@ We can also define `skipDuplicates` which is extremely useful.
               [prev, []]
           ).getOrElse [prev, [event]]
 
+From `withStateMachine` we can easily define `scan`:
+
+      scan: (initState, f) ->
+        @withStateMachine initState, (acc, event)->
+          newAcc = event.map((v)->f(acc, v)).getOrElse(acc)
+          [newAcc, [toEvent newAcc]]
+
 Always good in UI there is an option to `debounce`:
 
       debounce: (delay)->
