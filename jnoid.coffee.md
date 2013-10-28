@@ -123,7 +123,7 @@ a new Observable that will combine them.
 
 The first way to combine them is to just collect all the events from the
 spawned childen. This matches the semantics of `Stream` and will allow us to
-produce merge.
+produce `merge`.
 
 Another way to combine events is to unsubscribe all the existing children, when
 a new event occurs on root, then spawn a new one and just listen to it. You can
