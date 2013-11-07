@@ -236,8 +236,9 @@ Let's do `take` and `takeWhile`:
 `takeUntil` is going to be slightly more complicated - it's going to listen to
 one stream till an event on another appears. A very useful one:
 
-      takeUntil: (stopper)->
+      takeUntil: (other)->
         source = this
+        stopper = other.changes()
         new @constructor (sink)->
           unsubSource = ->
           unsubStopper = ->
@@ -255,6 +256,11 @@ one stream till an event on another appears. A very useful one:
           unsubSource = source.subscribe(transport)
           unsubStopper = stopper.subscribe(watcher)
           unbind
+
+A helper method for boolean algebra (others are map2 based methods and so are
+just applicable to box):
+
+      not: -> @map (x)-> !x
 
 How to build observables
 
@@ -460,11 +466,17 @@ Having this, `zipWith` is easy.
       zipWith: (others..., f)->
         Box.zipWith [@, others...], f
 
-Helpful would be to define boolean algebra over boxes.
+Helpful would be to define boolean algebra over boxes. `not` is defined on
+`Observable`.
 
       and: (others...)-> @zipWith others..., (a, b)-> a && b
       or: (others...)-> @zipWith others..., (a, b)-> a || b
-      not: -> @map (x)-> !x
+
+An interesting `sampledBy` function should take a property and stream it's
+value when sampler pops:
+
+      sampledBy: (sampler)->
+        sampler.flatMap(=> @take(1)).changes()
 
 Using Box when we need Stream
 -----------------------------

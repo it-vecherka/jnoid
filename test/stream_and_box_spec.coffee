@@ -102,8 +102,8 @@ describe 'EventStream', ->
 
   describe 'takeUntil', ->
     it 'takes until another stream pops', (done)->
-      first = Stream.interval(5, [1, 2, 3, 4, 5])
-      second = Stream.later(16, 'anything')
+      first = Stream.interval(10, [1, 2, 3, 4, 5])
+      second = Stream.later(35, 'anything')
       h.expectValues [1, 2, 3],
         first.takeUntil(second),
         done
@@ -196,6 +196,14 @@ describe "Box", ->
       box = Box.interval(10, [false, true, false])
       h.expectValues [true, false, true],
         box.not(),
+        done
+
+  describe 'sampledBy', ->
+    it 'samples box with a stream', (done)->
+      stream = Stream.interval(10, [1, 2, 3, 4, 5])
+      box = Stream.later(25, 2).box(1)
+      h.expectValues [1, 1, 1, 2, 2],
+        box.sampledBy(stream),
         done
 
   describe "changes", ->
