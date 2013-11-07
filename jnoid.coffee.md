@@ -209,7 +209,32 @@ Always good in UI there is an option to `debounce`:
         @flatMapLast (value)=>
           @constructor.later delay, value
 
+Let's do `take`, `takeWhile` and `takeUntil`:
+
+      take: (n)->
+        return @constructor.nothing() if n <= 0
+        @withHandler (event) ->
+          unless event instanceof Fire
+            @push event
+          else
+            n--
+            if n > 0
+              @push event
+            else
+              @push event if n == 0
+              @push Stop
+              Reply.stop
+
+      takeWhile: (f)->
+        @withHandler (event) ->
+          if event.test(f)
+            @push event
+          else
+            @push Stop
+            Reply.stop
+
 How to build observables
+
 ------------------------
 
 The basic ways to build an observable are `nothing`, `unit` and `error`. In

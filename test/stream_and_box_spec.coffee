@@ -93,6 +93,20 @@ describe 'EventStream', ->
         first.merge(second),
         done
 
+  describe 'take', ->
+    it 'takes n values', (done)->
+      stream = Stream.interval(5, [1, 2, 3, 4, 5])
+      h.expectValues [1, 2, 3],
+        stream.take(3)
+        done
+
+  describe 'takeWhile', ->
+    it 'takes while predicate', (done)->
+      stream = Stream.interval(5, [1, 11, 2, 3, 4, 5])
+      h.expectValues [1, 11],
+        stream.takeWhile((x)->x%2==1),
+        done
+
   describe 'box', ->
     it 'tranforms stream into box', (done)->
       stream = Stream.interval(10, [1, 2])
