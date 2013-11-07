@@ -123,7 +123,7 @@ a new Observable that will combine them.
 
 The first way to combine them is to just collect all the events from the
 spawned childen. This matches the semantics of `Stream` and will allow us to
-produce merge.
+produce `merge`.
 
 Another way to combine events is to unsubscribe all the existing children, when
 a new event occurs on root, then spawn a new one and just listen to it. You can
@@ -196,7 +196,74 @@ We can also define `skipDuplicates` which is extremely useful.
           [prev, []]
       ).getOrElse [prev, [event]]
 ```
+From `withStateMachine` we can easily define `scan`:
+```coffeescript
+  scan: (initState, f) ->
+    @withStateMachine initState, (acc, event)->
+      newAcc = event.map((v)->f(acc, v)).getOrElse(acc)
+      [newAcc, [toEvent newAcc]]
+```
+Always good in UI there is an option to `debounce`:
+```coffeescript
+  debounce: (delay)->
+    @flatMapLast (value)=>
+      @constructor.later delay, value
+```
+Let's do `take` and `takeWhile`:
+```coffeescript
+  take: (n)->
+    return @constructor.nothing() if n <= 0
+    @withHandler (event) ->
+      unless event instanceof Fire
+        @push event
+      else
+        n--
+        if n > 0
+          @push event
+        else
+          @push event if n == 0
+          @push Stop
+          Reply.stop
+
+  takeWhile: (f)->
+    @withHandler (event) ->
+      if event.test(f)
+        @push event
+      else
+        @push Stop
+        Reply.stop
+```
+`takeUntil` is going to be slightly more complicated - it's going to listen to
+one stream till an event on another appears. A very useful one:
+```coffeescript
+  takeUntil: (other)->
+    source = this
+    stopper = other.changes()
+    new @constructor (sink)->
+      unsubSource = ->
+      unsubStopper = ->
+      unbind = ->
+        unsubSource()
+        unsubStopper()
+
+      transport = (event)->
+        sink event
+        unbind() if event == Stop
+      watcher = (event)->
+        sink Stop
+        unbind()
+
+      unsubSource = source.subscribe(transport)
+      unsubStopper = stopper.subscribe(watcher)
+      unbind
+```
+A helper method for boolean algebra (others are map2 based methods and so are
+just applicable to box):
+```coffeescript
+  not: -> @map (x)-> !x
+```
 How to build observables
+
 ------------------------
 
 The basic ways to build an observable are `nothing`, `unit` and `error`. In
@@ -399,11 +466,17 @@ Having this, `zipWith` is easy.
   zipWith: (others..., f)->
     Box.zipWith [@, others...], f
 ```
-Helpful would be to define boolean algebra over boxes.
+Helpful would be to define boolean algebra over boxes. `not` is defined on
+`Observable`.
 ```coffeescript
   and: (others...)-> @zipWith others..., (a, b)-> a && b
   or: (others...)-> @zipWith others..., (a, b)-> a || b
-  not: -> @map (x)-> !x
+```
+An interesting `sampledBy` function should take a property and stream it's
+value when sampler pops:
+```coffeescript
+  sampledBy: (sampler)->
+    sampler.flatMap(=> @take(1)).changes()
 ```
 Using Box when we need Stream
 -----------------------------
