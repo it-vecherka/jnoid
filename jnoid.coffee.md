@@ -209,7 +209,7 @@ Always good in UI there is an option to `debounce`:
         @flatMapLast (value)=>
           @constructor.later delay, value
 
-Let's do `take`, `takeWhile` and `takeUntil`:
+Let's do `take` and `takeWhile`:
 
       take: (n)->
         return @constructor.nothing() if n <= 0
@@ -232,6 +232,29 @@ Let's do `take`, `takeWhile` and `takeUntil`:
           else
             @push Stop
             Reply.stop
+
+`takeUntil` is going to be slightly more complicated - it's going to listen to
+one stream till an event on another appears. A very useful one:
+
+      takeUntil: (stopper)->
+        source = this
+        new @constructor (sink)->
+          unsubSource = ->
+          unsubStopper = ->
+          unbind = ->
+            unsubSource()
+            unsubStopper()
+
+          transport = (event)->
+            sink event
+            unbind() if event == Stop
+          watcher = (event)->
+            sink Stop
+            unbind()
+
+          unsubSource = source.subscribe(transport)
+          unsubStopper = stopper.subscribe(watcher)
+          unbind
 
 How to build observables
 

@@ -100,6 +100,14 @@ describe 'EventStream', ->
         stream.take(3)
         done
 
+  describe 'takeUntil', ->
+    it 'takes until another stream pops', (done)->
+      first = Stream.interval(5, [1, 2, 3, 4, 5])
+      second = Stream.later(16, 'anything')
+      h.expectValues [1, 2, 3],
+        first.takeUntil(second),
+        done
+
   describe 'takeWhile', ->
     it 'takes while predicate', (done)->
       stream = Stream.interval(5, [1, 11, 2, 3, 4, 5])
