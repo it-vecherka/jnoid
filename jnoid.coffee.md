@@ -357,7 +357,7 @@ adds them. On each event it just pushes it to all sinks.
         subscribe ?= (event) ->
         sinks = []
         @push = (event) =>
-          for sink in sinks
+          for sink in sinks by -1
             tap sink(event), (reply)->
               remove sink, sinks if reply == Reply.stop
         handler ?= (event) -> @push event
