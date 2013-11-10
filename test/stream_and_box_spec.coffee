@@ -172,9 +172,9 @@ describe "Box", ->
     describe 'zip', ->
       it 'with another stream', (done)->
         first = Box.interval(10, [1, 2])
-        second = Box.interval(15, [100, 200, 300])
-        h.expectValues [102, 202, 302],
-          first.zip(second).map((x, y) -> x + y),
+        second = Box.interval(15, [5, 7, 9])
+        h.expectValues [[2, 5], [2, 7], [2, 9]],
+          first.zip(second),
           done
 
     describe 'zipWith', ->
