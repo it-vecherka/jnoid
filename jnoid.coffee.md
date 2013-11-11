@@ -466,6 +466,10 @@ Having this, `zipWith` is easy.
       zipWith: (others..., f)->
         Box.zipWith [@, others...], f
 
+`zip` method is it just sugar for the `sequence`.
+
+      zip: (boxes...)-> Box.sequence([@, boxes...])
+
 Helpful would be to define boolean algebra over boxes. `not` is defined on
 `Observable`.
 

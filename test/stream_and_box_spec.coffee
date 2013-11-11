@@ -169,6 +169,14 @@ describe "Box", ->
         Box.sequence([first, second]),
         done
 
+    describe 'zip', ->
+      it 'with another stream', (done)->
+        first = Box.interval(10, [1, 2])
+        second = Box.interval(15, [5, 7, 9])
+        h.expectValues [[2, 5], [2, 7], [2, 9]],
+          first.zip(second),
+          done
+
     describe 'zipWith', ->
       it 'zips with function', (done)->
         first = Box.interval(10, [1, 2])
