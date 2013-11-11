@@ -1,6 +1,6 @@
 assert = require('chai').assert
 h = require('./test_helpers')
-{Stream, Box, Event, Fire, Error, Stop} = require '../jnoid.coffee.md'
+{Stream, Box, Event, Fire, Error, Stop} = require '../jnoid'
 
 describe 'EventStream', ->
   describe 'basics', ->

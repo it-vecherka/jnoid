@@ -1,5 +1,5 @@
 assert = require('chai').assert
-{Fire, Error, Stop} = require '../jnoid.coffee.md'
+{Fire, Error, Stop} = require '../jnoid'
 
 module.exports =
   expectEvents: (expected, stream, done)->
