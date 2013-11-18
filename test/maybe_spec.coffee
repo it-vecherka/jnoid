@@ -1,5 +1,5 @@
 assert = require('chai').assert
-{Maybe, Just, Wrong, Nothing} = require '../jnoid.coffee.md'
+{Maybe, Just, Wrong, Nothing} = require '../jnoid'
 
 describe 'Maybe', ->
   describe 'Just', ->
