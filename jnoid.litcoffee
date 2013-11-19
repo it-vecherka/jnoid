@@ -546,7 +546,7 @@ Exports
 
 We now need to make our objects usable outside.
 
-    for name, value of {Stream, Box, Event, Fire, Error, Stop,
+    for name, value of {Observable, Stream, Box, Event, Fire, Error, Stop,
                                      Maybe, Just, Wrong, Nothing}
       Jnoid[name] = value
 
