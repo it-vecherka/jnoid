@@ -29,6 +29,15 @@ describe 'EventStream', ->
         Stream.interval(10, [1, 2, 3]).map((x)-> x*10),
         done
 
+    it 'tap applies function, but keeps events', (done)->
+      arr = [1, 2, 3]
+      donner = ->
+        assert.deepEqual arr, [1, 2, 3, 4]
+        done()
+      h.expectValues [arr],
+        Stream.later(10, arr).tap((x)-> x.push(4)),
+        donner
+
     it 'filter filters events', (done)->
       h.expectValues [1, 3],
         Stream.interval(10, [1, 2, 3]).filter((x)-> x % 2 != 0 ),

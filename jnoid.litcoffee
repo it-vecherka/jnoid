@@ -117,6 +117,12 @@ events using transform function.
           else
             @push event
 
+Sometimes we want to call mutator function, still returning same event. For
+example, apply "prevent default". Just a syntax sugar:
+
+      tap: (f)->
+        @map (x)-> tap x, f
+
 The most powerful combinator in our case is `flatMap`. It accepts a function
 that turns each of the values in observable to a new observable. We then return
 a new Observable that will combine them.
