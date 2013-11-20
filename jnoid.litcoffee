@@ -95,6 +95,15 @@ unwraps them.
           else
             Reply.more
 
+There is an option when we just want to force observable activation. For
+example to force event listeners to be in place. We can add a sugar method for
+this. Because we return the stream itself from `activate`, we can only
+unsubscribe our listener from inside listening function by returning
+`Reply.stop`.
+
+      activate: (f = nop)->
+        tap @, (stream)-> stream.onValue f
+
 We can now define basic transforms. Start with `map` and `filter`. We can
 see common pattern there, it's abstracted in `withHandler`.
 

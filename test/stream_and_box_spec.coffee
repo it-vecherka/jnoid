@@ -82,6 +82,16 @@ describe 'EventStream', ->
         assert.equal ['whut'], events
       , 1000
 
+    it 'activate activates stream and returns self', ->
+      stream = Stream.interval(10, [1, 2, 3]).activate()
+      events = []
+      setTimeout ->
+        stream.onValue (e)-> events.push e
+        setTimeout ->
+          assert.deepEqual [2, 3], events
+        , 1000
+      , 15
+
   describe 'recover', ->
     it 'maps errors to values', (done)->
       stream = new Stream (sink)->
