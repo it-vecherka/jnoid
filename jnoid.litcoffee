@@ -95,6 +95,15 @@ unwraps them.
           else
             Reply.more
 
+There is an option when we just want to force observable activation. For
+example to force event listeners to be in place. We can add a sugar method for
+this. Because we return the stream itself from `activate`, we can only
+unsubscribe our listener from inside listening function by returning
+`Reply.stop`.
+
+      activate: (f = nop)->
+        tap @, (stream)-> stream.onValue f
+
 We can now define basic transforms. Start with `map` and `filter`. We can
 see common pattern there, it's abstracted in `withHandler`.
 
@@ -116,6 +125,12 @@ events using transform function.
             @push new Fire f(event.error)
           else
             @push event
+
+Sometimes we want to call mutator function, still returning same event. For
+example, apply "prevent default". Just a syntax sugar:
+
+      tap: (f)->
+        @map (x)-> tap x, f
 
 The most powerful combinator in our case is `flatMap`. It accepts a function
 that turns each of the values in observable to a new observable. We then return
